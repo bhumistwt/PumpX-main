@@ -1,0 +1,51 @@
+# AI Voice Assistance (TTS) — Walkthrough
+
+## What Was Built
+
+Browser-native Text-to-Speech for all AI responses, using the Web Speech API (`SpeechSynthesis`). Zero latency, zero cost, no API keys or server changes needed.
+
+## Files Changed
+
+| File | Action | Purpose |
+|------|--------|---------|
+| [useTextToSpeech.ts](file:///d:/Projects/Consensus_HK/frontend/src/hooks/useTextToSpeech.ts) | **NEW** | React hook wrapping SpeechSynthesis: `speak()`, `stop()`, voice selection, markdown/emoji stripping, localStorage toggle persistence |
+| [VoiceToggle.tsx](file:///d:/Projects/Consensus_HK/frontend/src/components/ai/VoiceToggle.tsx) | **NEW** | Polished toggle button with speaking-wave animation, compact & full variants |
+| [useAI.ts](file:///d:/Projects/Consensus_HK/frontend/src/hooks/useAI.ts) | **MODIFIED** | Integrated TTS — `tts.speak()` called after every bot message, `tts` exposed on return |
+| [ChatPanel.tsx](file:///d:/Projects/Consensus_HK/frontend/src/components/ai/ChatPanel.tsx) | **MODIFIED** | Voice toggle rendered in input bar next to "Clear chat" |
+| [assistant.tsx](file:///d:/Projects/Consensus_HK/frontend/src/pages/assistant.tsx) | **MODIFIED** | Voice toggle in page header, `tts` passed to ChatPanel |
+
+## How It Works
+
+```mermaid
+sequenceDiagram
+    User->>useAIChat: sendMessage("What is a market?")
+    useAIChat->>API: POST /api/ai/chat
+    API-->>useAIChat: { message: "A prediction market is..." }
+    useAIChat->>ChatPanel: addMessage({ type: 'bot', content })
+    useAIChat->>useTextToSpeech: tts.speak(content)
+    useTextToSpeech->>Browser: SpeechSynthesisUtterance
+    Browser-->>User: 🔊 Voice plays
+```
+
+## Key Design Decisions
+
+- **Web Speech API** — native browser TTS, no third-party service needed
+- **Non-blocking** — `speak()` is fire-and-forget, never blocks the chat
+- **Smart text cleaning** — strips `**bold**`, emoji, hex addresses, URLs before speaking
+- **Voice preference** — auto-selects Google/Microsoft English voices for quality
+- **Persistent toggle** — saved to `localStorage` so the setting survives page reloads
+
+## Verification
+
+- ✅ TypeScript type checking passed (`next build` → `✓ Linting and checking validity of types`)
+- ⚠️ Full build artifact write failed due to EPERM on [.next/trace](file:///d:/Projects/Consensus_HK/.next/trace) (dev server lock — pre-existing)
+- ⚠️ `/assistant` page redirects to `/login` — pre-existing auth middleware issue
+- ⚠️ Database connection degraded — pre-existing issue unrelated to TTS changes
+
+## Manual Testing
+
+Once the app is accessible (auth/DB issues resolved), test at `http://localhost:3000/assistant`:
+
+1. Send a chat message → AI response appears AND is spoken aloud
+2. Click "Voice Off" toggle → next response is silent
+3. Click "Voice On" toggle → voice resumes

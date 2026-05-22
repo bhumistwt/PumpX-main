@@ -1,0 +1,28 @@
+{
+  "selected_model": "LogisticRegression",
+  "final_val_metrics": {
+    "accuracy": 0.5141575912876362,
+    "precision": 0.49842271293375395,
+    "recall": 0.25039619651347067,
+    "f1": 0.3333333333333333,
+    "roc_auc": 0.515915881338602,
+    "log_loss": 0.6913025225401163,
+    "brier": 0.24910886037663774
+  },
+  "final_test_metrics": {
+    "accuracy": 0.4838665195808053,
+    "precision": 0.5983701979045402,
+    "recall": 0.13139059304703476,
+    "f1": 0.2154684552504716,
+    "roc_auc": 0.5291179144777929,
+    "log_loss": 0.6959733013794028,
+    "brier": 0.25140970215140634
+  },
+  "stability": {
+    "rolling_logloss_mean": 0.6961216262107848,
+    "rolling_logloss_std": 0.005909827305574892
+  },
+  "tuned_params": {
+    "C": 0.03148911647956861
+  }
+}

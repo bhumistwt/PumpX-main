@@ -1,0 +1,422 @@
+// ─────────────────────────────────────────────────────────
+// PumpX — Production Prisma Schema
+// All multi-user state lives here. Zero localStorage.
+// ─────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// ── Users (wallet-based identity) ────────────────────────
+
+model User {
+  address   String   @id @db.VarChar(42) // lowercase 0x-prefixed
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  profile             UserProfile?
+  bets              Bet[]
+  marketsCreated    Market[]         @relation("MarketCreator")
+  xpTransactions    XPTransaction[]
+  reputation        Reputation?
+  reputationGiven   ReputationEvent[] @relation("ReputationFrom")
+  reputationReceived ReputationEvent[] @relation("ReputationTo")
+  streakData        Streak?
+  badges            UserBadge[]
+  squadMembership   SquadMember?
+  battlesCreated    Battle[]         @relation("BattleCreator")
+  battlesChallenged Battle[]         @relation("BattleChallenger")
+  seasonEntries     SeasonEntry[]
+
+  @@index([createdAt])
+}
+
+
+enum Role {
+  USER
+  ORACLE
+  ADMIN
+}
+
+// ── Markets (indexed from on-chain events) ───────────────
+
+model Market {
+  id              String       @id @default(cuid())
+  contractAddress String       @unique @db.VarChar(42)
+  chainId         Int
+  creatorAddress  String       @db.VarChar(42)
+  tokenAddress    String       @db.VarChar(42)
+  question        String       @db.VarChar(500)
+  threshold       String       // stored as string for BigInt precision
+  deadline        DateTime
+  initialSupply   String       // BigInt as string
+  latestSupply    String       // BigInt as string
+  yesPool         String       @default("0") // ETH in wei as string
+  noPool          String       @default("0")
+  resolved        Boolean      @default(false)
+  reached         Boolean      @default(false)
+  disputed        Boolean      @default(false)
+  paused          Boolean      @default(false)
+  resolvedAt      DateTime?
+  txHash          String       @db.VarChar(66) // deployment tx
+  blockNumber     Int
+  stockTicker     String?      @db.VarChar(10)
+
+  // ── ML Model Baseline ──────────────────────────────────
+  modelBaselineProbability Float?             // [0.01, 0.99] stored at creation
+  modelConfidence          Float?             // [0, 1]
+  modelSignal              String?            @db.VarChar(10) // BUY/SELL/NEUTRAL
+  modelRiskFlags           String[]           // e.g. ["LOW_CONFIDENCE"]
+  blendedProbability       Float?             // 0.4*model + 0.6*market
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relations
+  creator User  @relation("MarketCreator", fields: [creatorAddress], references: [address])
+  bets    Bet[]
+
+  @@index([creatorAddress])
+  @@index([chainId])
+  @@index([resolved])
+  @@index([deadline])
+  @@index([stockTicker])
+  @@index([createdAt])
+}
+
+// ── Bets (indexed from DepositYes / DepositNo events) ────
+
+model Bet {
+  id              String   @id @default(cuid())
+  marketAddress   String   @db.VarChar(42)
+  userAddress     String   @db.VarChar(42)
+  side            BetSide
+  amount          String   // wei as string
+  txHash          String   @db.VarChar(66)
+  blockNumber     Int
+  chainId         Int
+  createdAt       DateTime @default(now())
+
+  // Relations
+  market Market @relation(fields: [marketAddress], references: [contractAddress])
+  user   User   @relation(fields: [userAddress], references: [address])
+
+  @@index([marketAddress])
+  @@index([userAddress])
+  @@index([createdAt])
+  @@index([chainId])
+}
+
+enum BetSide {
+  YES
+  NO
+}
+
+// ── Claims (indexed from Claimed events) ─────────────────
+
+model Claim {
+  id            String   @id @default(cuid())
+  marketAddress String   @db.VarChar(42)
+  userAddress   String   @db.VarChar(42)
+  payout        String   // wei as string
+  txHash        String   @db.VarChar(66)
+  blockNumber   Int
+  chainId       Int
+  createdAt     DateTime @default(now())
+
+  @@unique([marketAddress, userAddress])
+  @@index([userAddress])
+}
+
+// ── XP & Gamification ────────────────────────────────────
+
+model XPTransaction {
+  id          String   @id @default(cuid())
+  userAddress String   @db.VarChar(42)
+  amount      Int
+  reason      String   @db.VarChar(100)
+  metadata    Json?    // optional context
+  seasonId    String?
+  createdAt   DateTime @default(now())
+
+  user   User    @relation(fields: [userAddress], references: [address])
+  season Season? @relation(fields: [seasonId], references: [id])
+
+  @@index([userAddress])
+  @@index([createdAt])
+  @@index([seasonId])
+}
+
+model Streak {
+  userAddress      String   @id @db.VarChar(42)
+  currentStreak    Int      @default(0)
+  longestStreak    Int      @default(0)
+  lastActivityDate String   @db.VarChar(10) // YYYY-MM-DD in UTC
+  shieldsRemaining Int      @default(0)
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userAddress], references: [address])
+}
+
+model UserBadge {
+  id          String   @id @default(cuid())
+  userAddress String   @db.VarChar(42)
+  badgeId     String   @db.VarChar(50)
+  unlockedAt  DateTime @default(now())
+
+  user User @relation(fields: [userAddress], references: [address])
+
+  @@unique([userAddress, badgeId])
+  @@index([userAddress])
+}
+
+// ── Reputation ───────────────────────────────────────────
+
+model Reputation {
+  userAddress     String @id @db.VarChar(42)
+  score           Int    @default(0)
+  marketsCreated  Int    @default(0)
+  marketsResolved Int    @default(0)
+  totalBets       Int    @default(0)
+  totalWins       Int    @default(0)
+  totalVolume     String @default("0") // wei as string
+  upvotes         Int    @default(0)
+  flags           Int    @default(0)
+
+  user User @relation(fields: [userAddress], references: [address])
+}
+
+model ReputationEvent {
+  id          String          @id @default(cuid())
+  fromAddress String          @db.VarChar(42)
+  toAddress   String          @db.VarChar(42)
+  type        ReputationType
+  reason      String?         @db.VarChar(200)
+  createdAt   DateTime        @default(now())
+
+  from User @relation("ReputationFrom", fields: [fromAddress], references: [address])
+  to   User @relation("ReputationTo", fields: [toAddress], references: [address])
+
+  @@index([toAddress])
+  @@index([fromAddress])
+}
+
+enum ReputationType {
+  UPVOTE
+  FLAG
+}
+
+// ── Seasons ──────────────────────────────────────────────
+
+model Season {
+  id        String   @id @default(cuid())
+  name      String   @db.VarChar(100)
+  number    Int      @unique
+  startDate DateTime
+  endDate   DateTime
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  entries      SeasonEntry[]
+  xpTransactions XPTransaction[]
+
+  @@index([active])
+}
+
+model SeasonEntry {
+  id          String @id @default(cuid())
+  seasonId    String
+  userAddress String @db.VarChar(42)
+  xp          Int    @default(0)
+  rank        Int?
+
+  season Season @relation(fields: [seasonId], references: [id])
+  user   User   @relation(fields: [userAddress], references: [address])
+
+  @@unique([seasonId, userAddress])
+  @@index([seasonId, xp(sort: Desc)])
+}
+
+// ── Squads ───────────────────────────────────────────────
+
+model Squad {
+  id         String   @id @default(cuid())
+  name       String   @unique @db.VarChar(50)
+  tag        String   @unique @db.VarChar(5)
+  inviteCode String   @unique @db.VarChar(12)
+  level      Int      @default(1)
+  totalXP    Int      @default(0)
+  maxMembers Int      @default(10)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  members SquadMember[]
+
+  @@index([totalXP(sort: Desc)])
+}
+
+model SquadMember {
+  id          String    @id @default(cuid())
+  squadId     String
+  userAddress String    @unique @db.VarChar(42)
+  role        SquadRole @default(MEMBER)
+  xpContributed Int     @default(0)
+  joinedAt    DateTime  @default(now())
+
+  squad Squad @relation(fields: [squadId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userAddress], references: [address])
+
+  @@index([squadId])
+}
+
+enum SquadRole {
+  LEADER
+  OFFICER
+  MEMBER
+}
+
+// ── Battles ──────────────────────────────────────────────
+
+model Battle {
+  id                String       @id @default(cuid())
+  creatorAddress    String       @db.VarChar(42)
+  challengerAddress String?      @db.VarChar(42)
+  marketAddress     String       @db.VarChar(42)
+  creatorSide       BetSide
+  stakeXP           Int
+  status            BattleStatus @default(PENDING)
+  winnnerAddress    String?      @db.VarChar(42)
+  createdAt         DateTime     @default(now())
+  expiresAt         DateTime
+  settledAt         DateTime?
+
+  creator    User  @relation("BattleCreator", fields: [creatorAddress], references: [address])
+  challenger User? @relation("BattleChallenger", fields: [challengerAddress], references: [address])
+
+  @@index([creatorAddress])
+  @@index([challengerAddress])
+  @@index([status])
+  @@index([marketAddress])
+}
+
+enum BattleStatus {
+  PENDING
+  ACTIVE
+  SETTLED
+  CANCELLED
+  EXPIRED
+}
+
+// ── Event Indexer State ──────────────────────────────────
+
+model IndexerState {
+  chainId          Int    @id
+  lastBlockNumber  Int    @default(0)
+  lastBlockHash    String @default("") @db.VarChar(66)
+  updatedAt        DateTime @updatedAt
+}
+
+// ── Daily Challenges ─────────────────────────────────────
+
+model ChallengeProgress {
+  id           String   @id @default(cuid())
+  userAddress  String   @db.VarChar(42)
+  challengeId  String   @db.VarChar(50)
+  date         String   @db.VarChar(10) // YYYY-MM-DD
+  progress     Int      @default(0)
+  target       Int
+  completed    Boolean  @default(false)
+  xpAwarded    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@unique([userAddress, challengeId, date])
+  @@index([userAddress, date])
+}
+
+// ── SIWE Auth Nonces (prevents replay attacks) ───────────────
+
+model AuthNonce {
+  nonce     String   @id @db.VarChar(64)
+  address   String   @db.VarChar(42)
+  issuedAt  DateTime @default(now())
+  expiresAt DateTime
+  used      Boolean  @default(false)
+
+  @@index([address])
+  @@index([expiresAt])
+}
+
+// ── User Profiles (set on first login) ───────────────────────
+
+model UserProfile {
+  address   String   @id @db.VarChar(42)
+  username  String   @unique @db.VarChar(30)
+  avatarUrl String?  @db.VarChar(500)
+  bio       String?  @db.VarChar(200)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [address], references: [address])
+}
+
+// ── ML Model Prediction Log ──────────────────────────────
+// One row per prediction event (creation, update, settlement).
+
+enum PredictionTrigger {
+  CREATION
+  LIVE_UPDATE
+  SETTLEMENT
+  MANUAL
+}
+
+model ModelPredictionLog {
+  id            String            @id @default(cuid())
+  marketAddress String            @db.VarChar(42)
+  probability   Float
+  confidence    Float
+  signal        String            @db.VarChar(10)
+  riskFlags     String[]
+  triggeredBy   PredictionTrigger
+  rawScore      Float?
+  createdAt     DateTime          @default(now())
+
+  @@index([marketAddress])
+  @@index([createdAt])
+  @@index([triggeredBy])
+}
+
+// ── ML Drift Log ─────────────────────────────────────────
+// Written by the daily drift-monitoring cron job.
+
+model ModelDriftLog {
+  id         String   @id @default(cuid())
+  psiScore   Float?
+  status     String?  @db.VarChar(100)
+  isDegrading Boolean @default(false)
+  checkedAt  DateTime @default(now())
+
+  @@index([checkedAt])
+}
+
+// ── ML Model Health (singleton) ───────────────────────────
+// A single row (id = "main") updated by admin jobs.
+
+model ModelHealth {
+  id                 String   @id @default("main")
+  avgProbability     Float    @default(0.5)
+  avgConfidence      Float    @default(0)
+  overconfidenceRate Float    @default(0)  // fraction of predictions with confidence > 0.8
+  totalPredictions   Int      @default(0)
+  lastDriftCheck     DateTime?
+  lastDriftPsi       Float?
+  isDegrading        Boolean  @default(false)
+  updatedAt          DateTime @updatedAt
+}

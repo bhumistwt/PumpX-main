@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PumpX — Prediction Markets on Base</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  RESET + DESIGN TOKENS                                     ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#07090e;--bg2:#0c0f17;--bg3:#111520;--bg4:#161b28;
+  --border:rgba(255,255,255,.06);--border2:#1a2030;
+  --accent:#00e87a;--accent-dim:rgba(0,232,122,.12);
+  --accent2:#ff3f6c;--accent2-dim:rgba(255,63,108,.1);
+  --accent3:#4d8eff;--accent3-dim:rgba(77,142,255,.1);
+  --warn:#ffcc00;--purple:#a855f7;
+  --text:#dce6f5;--text2:#b0becc;--muted:#4a5a70;
+  --radius:14px;--radius-sm:10px;--radius-lg:20px;--radius-xl:28px;
+  --shadow:0 4px 30px rgba(0,0,0,.35);
+  --glass:rgba(12,15,23,.72);
+  --transition:.3s cubic-bezier(.4,0,.2,1);
+}
+html{font-size:16px;scroll-behavior:smooth}
+body{
+  font-family:'Space Mono',monospace;background:var(--bg);color:var(--text);
+  min-height:100vh;overflow-x:hidden;line-height:1.65;
+}
+h1,h2,h3,h4,h5,h6{font-family:'Syne',sans-serif;font-weight:700;line-height:1.2;color:#fff}
+a{color:var(--accent);text-decoration:none;transition:color .2s}
+a:hover{color:#00ff88}
+button{cursor:pointer;font-family:'Space Mono',monospace;border:none;outline:none}
+input,select,textarea{
+  font-family:'Space Mono',monospace;background:var(--bg2);color:var(--text);
+  border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px 16px;
+  font-size:.85rem;width:100%;outline:none;transition:border var(--transition);
+}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+::selection{background:var(--accent);color:#000}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--muted);border-radius:3px}
+img{max-width:100%;display:block}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  UTILITY                                                    ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+.container{max-width:1200px;margin:0 auto;padding:0 24px}
+.container-sm{max-width:800px;margin:0 auto;padding:0 24px}
+.flex{display:flex}.flex-col{flex-direction:column}.items-center{align-items:center}
+.justify-between{justify-content:space-between}.justify-center{justify-content:center}
+.gap-1{gap:8px}.gap-2{gap:12px}.gap-3{gap:16px}.gap-4{gap:24px}.gap-5{gap:32px}
+.grid{display:grid}
+.text-center{text-align:center}.text-right{text-align:right}
+.text-sm{font-size:.82rem}.text-xs{font-size:.72rem}.text-lg{font-size:1.1rem}
+.text-muted{color:var(--muted)}.text-accent{color:var(--accent)}.text-warn{color:var(--warn)}
+.text-red{color:var(--accent2)}.text-blue{color:var(--accent3)}
+.fw-800{font-weight:800}.fw-700{font-weight:700}.fw-600{font-weight:600}
+.mt-1{margin-top:8px}.mt-2{margin-top:16px}.mt-3{margin-top:24px}.mt-4{margin-top:32px}.mt-5{margin-top:48px}
+.mb-1{margin-bottom:8px}.mb-2{margin-bottom:16px}.mb-3{margin-bottom:24px}.mb-4{margin-bottom:32px}
+.w-full{width:100%}.mx-auto{margin-left:auto;margin-right:auto}
+.hidden{display:none!important}
+.relative{position:relative}.overflow-hidden{overflow:hidden}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  SECTION SPACING + PATTERN                                  ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+.section{padding:80px 0;position:relative}
+.section-alt{background:var(--bg2)}
+.section-title{
+  font-size:2.2rem;font-weight:800;margin-bottom:6px;
+  font-family:'Syne',sans-serif;
+}
+.section-title .gradient{
+  background:linear-gradient(135deg,var(--accent),var(--accent3));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.section-title-spaced{
+  font-size:.85rem;letter-spacing:6px;text-transform:uppercase;color:var(--accent);
+  font-weight:700;margin-bottom:8px;
+}
+.section-sub{color:var(--text2);font-size:.88rem;max-width:560px;line-height:1.7}
+.section-sub.center{margin:0 auto}
+.section-badge{
+  display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;
+  background:var(--accent-dim);border:1px solid rgba(0,232,122,.15);
+  font-size:.7rem;font-weight:700;color:var(--accent);margin-bottom:16px;
+}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  CARDS                                                      ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+.card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:28px;position:relative;overflow:hidden;transition:transform var(--transition),box-shadow var(--transition);
+}
+.card:hover{transform:translateY(-4px);box-shadow:0 8px 40px rgba(0,0,0,.4)}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,232,122,.12),transparent);
+}
+.card-glass{
+  background:var(--glass);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border:1px solid var(--border);border-radius:var(--radius-lg);
+}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  BUTTONS                                                    ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px 28px;border-radius:var(--radius-xl);font-size:.85rem;font-weight:700;
+  transition:all var(--transition);position:relative;overflow:hidden;white-space:nowrap;
+}
+.btn::after{
+  content:'';position:absolute;inset:0;opacity:0;transition:opacity .3s;
+  background:radial-gradient(circle at center,rgba(255,255,255,.15),transparent 70%);
+}
+.btn:hover::after{opacity:1}
+.btn-primary{background:var(--accent);color:#000}
+.btn-primary:hover{box-shadow:0 0 40px rgba(0,232,122,.35);transform:translateY(-2px)}
+.btn-primary:disabled{background:var(--muted);color:var(--bg);cursor:not-allowed;box-shadow:none;transform:none}
+.btn-outline{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
+.btn-outline:hover{background:var(--accent-dim);transform:translateY(-2px)}
+.btn-ghost{background:transparent;color:var(--text);padding:10px 16px;border-radius:var(--radius-sm)}
+.btn-ghost:hover{background:rgba(255,255,255,.05)}
+.btn-sm{padding:8px 18px;font-size:.75rem;border-radius:20px}
+.btn-danger{background:var(--accent2);color:#fff}
+.btn-icon{
+  width:42px;height:42px;border-radius:50%;padding:0;flex-shrink:0;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  HEADER                                                     ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+.header{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  padding:16px 0;transition:all .4s;
+}
+.header.scrolled{
+  background:rgba(7,9,14,.92);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);padding:10px 0;
+}
+.header-inner{display:flex;align-items:center;justify-content:space-between}
+.logo{
+  font-family:'Syne',sans-serif;font-size:1.7rem;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent3));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  letter-spacing:-1px;cursor:pointer;
+}
+.logo sub{
+  font-size:.55rem;font-weight:700;letter-spacing:2px;
+  background:linear-gradient(135deg,var(--accent2),var(--warn));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  vertical-align:baseline;margin-left:2px;
+}
+.nav{display:flex;align-items:center;gap:4px}
+.nav a{
+  padding:8px 16px;border-radius:var(--radius-xl);font-size:.8rem;font-weight:700;
+  color:var(--text2);transition:all .2s;
+}
+.nav a:hover,.nav a.active{color:#fff;background:rgba(255,255,255,.06)}
+.chain-pill{
+  display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-xl);
+  background:var(--accent3-dim);border:1px solid rgba(77,142,255,.15);
+  font-size:.72rem;color:var(--accent3);font-weight:700;
+}
+.chain-pill .live{
+  width:7px;height:7px;border-radius:50%;background:var(--accent);
+  box-shadow:0 0 10px var(--accent);animation:pulse 2s infinite;
+}
+.mobile-toggle{display:none;background:none;color:var(--text);font-size:1.4rem;padding:8px}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  HERO                                                       ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+.hero{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:120px 0 60px;position:relative;overflow:hidden;
+}
+.hero-bg{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 20%,rgba(0,232,122,.06),transparent),
+    radial-gradient(ellipse 60% 50% at 80% 80%,rgba(77,142,255,.05),transparent),
+    radial-gradient(ellipse 50% 40% at 10% 70%,rgba(255,63,108,.04),transparent);
+}
+.hero-grid{
+  position:absolute;inset:0;opacity:.04;
+  background-image:
+    linear-gradient(rgba(255,255,255,.1) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.1) 1px,transparent 1px);
+  background-size:60px 60px;
+}
+.hero-content{position:relative;text-align:center;max-width:740px;margin:0 auto}
+.hero-tag{
+  display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:var(--radius-xl);
+  background:var(--accent-dim);border:1px solid rgba(0,232,122,.15);
+  font-size:.72rem;font-weight:700;color:var(--accent);margin-bottom:24px;
+  animation:fadeUp .6s ease .1s both;
+}
+.hero h1{
+  font-size:3.8rem;font-weight:800;line-height:1.08;margin-bottom:20px;
+  animation:fadeUp .6s ease .2s both;
+}
+.hero h1 .line2{
+  background:linear-gradient(135deg,var(--accent),var(--accent3));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero-sub{
+  font-size:1rem;color:var(--text2);max-width:520px;margin:0 auto 32px;line-height:1.8;
+  animation:fadeUp .6s ease .35s both;
+}
+.hero-actions{
+  display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;
+  animation:fadeUp .6s ease .45s both;
+}
+.hero-stats{
+  display:flex;justify-content:center;gap:40px;margin-top:48px;
+  animation:fadeUp .6s ease .6s both;
+}
+.hero-stat{text-align:center}
+.hero-stat .num{font-family:'Syne';font-size:1.8rem;font-weight:800;color:#fff}
+.hero-stat .num span{color:var(--accent)}
+.hero-stat .lbl{font-size:.7rem;color:var(--muted);margin-top:2px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+
+/* ── Marquee (scrolling logos) ────── */
+.marquee-section{
+  padding:28px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  overflow:hidden;background:var(--bg2);
+}
+.marquee-label{
+  font-size:.65rem;color:var(--muted);text-align:center;margin-bottom:14px;
+  letter-spacing:3px;text-transform:uppercase;font-weight:700;
+}
+.marquee-track{
+  display:flex;gap:48px;animation:marquee 30s linear infinite;width:max-content;
+}
+.marquee-track:hover{animation-play-state:paused}
+.marquee-item{
+  display:flex;align-items:center;gap:8px;font-size:.82rem;font-weight:700;
+  color:var(--muted);white-space:nowrap;flex-shrink:0;opacity:.6;transition:opacity .3s;
+}
+.marquee-item:hover{opacity:1}
+.marquee-item .icon{
+  width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:.85rem;background:var(--bg3);
+}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  PUMPSCORE                                                  ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+.score-grid{
+  display:grid;grid-template-columns:1fr 1.3fr;gap:40px;align-items:center;
+}
+.score-ring-wrap{display:flex;justify-content:center}
+.score-ring{
+  position:relative;width:240px;height:240px;display:flex;
+  align-items:center;justify-content:center;flex-direction:column;
+}
+.score-ring svg{position:absolute;top:0;left:0;width:100%;height:100%;transform:rotate(-90deg)}
+.score-ring .track{fill:none;stroke:var(--border2);stroke-width:7}
+.score-ring .bar{
+  fill:none;stroke-width:7;stroke-linecap:round;
+  transition:stroke-dashoffset .8s ease,stroke .5s;filter:drop-shadow(0 0 8px currentColor);
+}
+.score-number{
+  font-family:'Syne';font-size:4.5rem;font-weight:800;line-height:1;position:relative;
+}
+.score-number .live-dot{
+  position:absolute;top:6px;right:-16px;width:9px;height:9px;
+  border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite;
+  box-shadow:0 0 12px var(--accent);
+}
+.score-label{
+  font-size:.78rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-top:4px;
+}
+.score-info h3{font-size:1.6rem;margin-bottom:8px}
+.score-info p{color:var(--text2);font-size:.85rem;margin-bottom:24px;line-height:1.7}
+.score-cards{display:flex;flex-direction:column;gap:12px}
+.score-card{
+  display:flex;align-items:center;gap:14px;padding:14px 18px;
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);
+  transition:all var(--transition);
+}
+.score-card:hover{border-color:rgba(0,232,122,.15);transform:translateX(4px)}
+.score-card-icon{
+  width:42px;height:42px;border-radius:var(--radius-sm);display:flex;
+  align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;
+}
+.score-card-label{font-size:.72rem;color:var(--muted)}
+.score-card-value{font-size:1rem;font-weight:700;color:#fff}
+.gauge-bar-wrap{margin-top:32px}
+.gauge-bar-track{
+  height:8px;border-radius:4px;position:relative;
+  background:linear-gradient(90deg,var(--accent2) 0%,#ff7a2e 25%,var(--muted) 45%,var(--warn) 65%,var(--accent) 100%);
+}
+.gauge-bar-thumb{
+  position:absolute;top:50%;width:20px;height:20px;border-radius:50%;
+  background:#fff;border:3px solid var(--accent);transform:translate(-50%,-50%);
+  transition:left .8s ease;box-shadow:0 0 16px rgba(0,232,122,.5);
+}
+.gauge-labels{display:flex;justify-content:space-between;margin-top:8px;font-size:.62rem;color:var(--muted)}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  FEATURES / SERVICES GRID                                   ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+.features-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:20px;
+}
+.feature-card{
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:32px 24px;text-align:center;transition:all var(--transition);position:relative;overflow:hidden;
+}
+.feature-card::before{
+  content:'';position:absolute;top:0;left:50%;width:60%;height:2px;
+  transform:translateX(-50%);background:linear-gradient(90deg,transparent,var(--accent),transparent);
+  opacity:0;transition:opacity .3s;
+}
+.feature-card:hover::before{opacity:1}
+.feature-card:hover{
+  border-color:rgba(0,232,122,.15);transform:translateY(-6px);
+  box-shadow:0 12px 48px rgba(0,0,0,.5);
+}
+.feature-icon{
+  width:64px;height:64px;border-radius:var(--radius);margin:0 auto 18px;
+  display:flex;align-items:center;justify-content:center;font-size:1.8rem;
+  background:var(--accent-dim);transition:transform .3s;
+}
+.feature-card:hover .feature-icon{transform:scale(1.1)}
+.feature-card h4{font-size:1rem;margin-bottom:8px}
+.feature-card p{font-size:.78rem;color:var(--text2);line-height:1.7}
+.feature-card .link{
+  display:inline-flex;align-items:center;gap:4px;margin-top:14px;
+  font-size:.75rem;font-weight:700;color:var(--accent);
+}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  STATS / FUN FACTS                                          ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+.stats-section{
+  background:linear-gradient(135deg,rgba(0,232,122,.04),rgba(77,142,255,.04));
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+.stat-card{text-align:center;padding:28px 16px}
+.stat-num{
+  font-family:'Syne';font-size:2.6rem;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent3));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:4px;
+}
+.stat-label{font-size:.75rem;color:var(--muted);font-weight:700}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  WHY CHOOSE + PROCESS                                       ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+.why-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.why-tags{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.why-tag{
+  padding:8px 18px;border-radius:var(--radius-xl);font-size:.75rem;font-weight:700;
+  background:var(--bg3);border:1px solid var(--border);color:var(--text2);
+  transition:all .2s;
+}
+.why-tag:hover{border-color:var(--accent);color:var(--accent)}
+.why-visual{
+  position:relative;display:flex;justify-content:center;align-items:center;
+  min-height:380px;
+}
+.why-visual-ring{
+  width:300px;height:300px;border-radius:50%;
+  border:2px dashed rgba(0,232,122,.15);display:flex;align-items:center;
+  justify-content:center;animation:spinSlow 30s linear infinite;
+}
+.why-visual-core{
+  width:120px;height:120px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent3));
+  display:flex;align-items:center;justify-content:center;
+  font-size:2.4rem;animation:spinSlowReverse 30s linear infinite;
+  box-shadow:0 0 60px rgba(0,232,122,.2);
+}
+@keyframes spinSlow{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes spinSlowReverse{from{transform:rotate(0)}to{transform:rotate(-360deg)}}
+.why-orbit{
+  position:absolute;width:48px;height:48px;border-radius:50%;
+  background:var(--bg2);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:1.2rem;
+  box-shadow:var(--shadow);
+}
+
+.process-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:40px}
+.process-card{text-align:center;padding:32px 20px;position:relative}
+.process-num{
+  width:52px;height:52px;border-radius:50%;margin:0 auto 16px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne';font-size:1.2rem;font-weight:800;
+  background:var(--accent);color:#000;box-shadow:0 0 24px var(--accent-dim);
+}
+.process-card h4{font-size:1rem;margin-bottom:8px}
+.process-card p{font-size:.78rem;color:var(--text2);line-height:1.7}
+.process-arrow{
+  position:absolute;right:-16px;top:50px;font-size:1.2rem;color:var(--muted);
+}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  DEPLOY WIZARD                                              ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+.wizard-outer{max-width:720px;margin:0 auto}
+.stepper{display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:36px}
+.stepper-step{
+  display:flex;align-items:center;gap:6px;padding:10px 18px;border-radius:var(--radius-xl);
+  font-size:.75rem;font-weight:700;color:var(--muted);transition:all .3s;
+}
+.stepper-step.active{background:var(--accent-dim);color:var(--accent);border:1px solid rgba(0,232,122,.15)}
+.stepper-step.done{color:var(--accent)}
+.stepper-step .num{
+  width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:var(--bg3);font-size:.65rem;border:1.5px solid var(--border2);transition:all .3s;
+}
+.stepper-step.active .num,.stepper-step.done .num{background:var(--accent);color:#000;border-color:var(--accent)}
+.stepper-line{width:28px;height:1.5px;background:var(--border2);transition:background .3s}
+.stepper-line.done{background:var(--accent)}
+
+.chip-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.chip{
+  padding:9px 16px;border-radius:var(--radius-xl);font-size:.75rem;font-weight:700;
+  background:var(--bg3);border:1.5px solid var(--border);color:var(--text);
+  cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:7px;
+}
+.chip:hover{border-color:var(--accent);background:var(--accent-dim)}
+.chip.selected{border-color:var(--accent);background:var(--accent-dim);color:var(--accent)}
+.chip .chip-icon{
+  width:22px;height:22px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:.6rem;font-weight:700;color:#fff;
+}
+.form-group{margin-bottom:20px}
+.form-label{font-size:.75rem;color:var(--muted);margin-bottom:8px;display:block;font-weight:700}
+.form-hint{font-size:.65rem;color:var(--muted);margin-top:5px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+
+.token-result{
+  display:flex;align-items:center;gap:18px;padding:18px 22px;
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);
+  margin-top:18px;animation:fadeUp .3s ease;
+}
+.token-result .token-icon{
+  width:52px;height:52px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-family:'Syne';font-weight:800;font-size:1.3rem;
+  color:#000;flex-shrink:0;
+}
+.token-result .token-meta{flex:1;min-width:0}
+.token-result .token-name{font-weight:700;font-size:.95rem;color:#fff}
+.token-result .token-addr{font-size:.65rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.token-result .token-stats{display:flex;gap:18px;flex-wrap:wrap;margin-top:7px;font-size:.75rem}
+.token-result .token-stats span{color:var(--muted)}
+.token-result .token-stats b{color:var(--text);margin-left:4px}
+
+.type-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin:14px 0}
+.type-card{
+  padding:18px 14px;border-radius:var(--radius);background:var(--bg3);
+  border:2px solid var(--border);cursor:pointer;transition:all .2s;text-align:center;
+}
+.type-card:hover{border-color:var(--accent3)}
+.type-card.selected{border-color:var(--accent);background:var(--accent-dim)}
+.type-card .type-icon{font-size:1.8rem;margin-bottom:8px}
+.type-card .type-name{font-size:.82rem;font-weight:700}
+.type-card .type-desc{font-size:.68rem;color:var(--text2);margin-top:4px}
+
+.radio-group{display:flex;gap:8px;flex-wrap:wrap}
+.radio-pill{
+  padding:9px 18px;border-radius:var(--radius-xl);font-size:.75rem;font-weight:700;
+  background:var(--bg);border:1.5px solid var(--border2);cursor:pointer;transition:all .2s;color:var(--text);
+}
+.radio-pill:hover{border-color:var(--accent3)}
+.radio-pill.selected{border-color:var(--accent);background:var(--accent-dim);color:var(--accent)}
+
+.slider-wrap{position:relative;padding-top:8px}
+.slider-wrap input[type=range]{
+  -webkit-appearance:none;width:100%;height:4px;border-radius:2px;
+  background:var(--border2);outline:none;border:none;padding:0;
+}
+.slider-wrap input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--accent);cursor:pointer;border:3px solid var(--bg);box-shadow:0 0 10px var(--accent-dim);
+}
+.slider-val{position:absolute;right:0;top:0;font-size:.82rem;font-weight:700;color:var(--accent)}
+
+.review-table{width:100%;border-collapse:collapse}
+.review-table tr{border-bottom:1px solid var(--border)}
+.review-table td{padding:13px 0;font-size:.85rem}
+.review-table td:first-child{color:var(--muted);width:42%}
+.review-table td:last-child{font-weight:700;text-align:right;color:#fff}
+
+.deploy-steps{max-width:440px;margin:0 auto}
+.deploy-step{
+  display:flex;align-items:center;gap:14px;padding:14px 0;
+  border-bottom:1px solid rgba(255,255,255,.03);font-size:.85rem;
+}
+.deploy-step .step-icon{
+  width:34px;height:34px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;border:2px solid var(--border2);
+  font-size:.85rem;transition:all .4s;
+}
+.deploy-step.pending .step-icon{border-color:var(--muted);color:var(--muted)}
+.deploy-step.loading .step-icon{border-color:var(--accent3);color:var(--accent3);animation:spin .8s linear infinite}
+.deploy-step.done .step-icon{border-color:var(--accent);background:var(--accent);color:#000}
+.deploy-step.done .step-label{color:var(--accent)}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+.success-box{
+  text-align:center;padding:36px;border-radius:var(--radius-lg);
+  background:linear-gradient(135deg,rgba(0,232,122,.04),rgba(77,142,255,.04));
+  border:1px solid rgba(0,232,122,.15);animation:fadeUp .5s ease;margin-top:24px;
+}
+.success-box .check{
+  width:68px;height:68px;border-radius:50%;background:var(--accent);color:#000;
+  display:flex;align-items:center;justify-content:center;font-size:2.2rem;
+  margin:0 auto 18px;box-shadow:0 0 30px var(--accent-dim);
+}
+.success-box h3{font-size:1.3rem;margin-bottom:8px}
+.success-box .tx-hash{
+  font-size:.68rem;color:var(--muted);word-break:break-all;
+  background:var(--bg);padding:10px 14px;border-radius:var(--radius-sm);max-width:420px;
+  margin:14px auto;
+}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  FAQ                                                        ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+.faq-list{max-width:680px;margin:0 auto}
+.faq-item{border-bottom:1px solid var(--border);overflow:hidden}
+.faq-q{
+  padding:18px 0;font-size:.9rem;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:space-between;color:#fff;
+  transition:color .2s;
+}
+.faq-q:hover{color:var(--accent)}
+.faq-q .arrow{transition:transform .3s;font-size:.8rem;color:var(--muted)}
+.faq-item.open .faq-q .arrow{transform:rotate(180deg);color:var(--accent)}
+.faq-a{
+  max-height:0;overflow:hidden;transition:max-height .4s ease,padding .3s;
+  font-size:.82rem;color:var(--text2);line-height:1.8;
+}
+.faq-item.open .faq-a{max-height:300px;padding-bottom:18px}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  TESTIMONIALS                                               ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+.testimonials-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.testimonial{padding:24px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-lg)}
+.testimonial .stars{color:var(--warn);font-size:.85rem;margin-bottom:10px;letter-spacing:2px}
+.testimonial p{font-size:.82rem;color:var(--text2);line-height:1.7;margin-bottom:14px;font-style:italic}
+.testimonial .author{display:flex;align-items:center;gap:10px}
+.testimonial .avatar{
+  width:36px;height:36px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:.75rem;font-weight:700;color:#000;
+}
+.testimonial .author-name{font-size:.78rem;font-weight:700;color:#fff}
+.testimonial .author-role{font-size:.65rem;color:var(--muted)}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  CTA / CONTACT                                              ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+.cta-section{
+  background:linear-gradient(135deg,rgba(0,232,122,.06) 0%,rgba(77,142,255,.06) 50%,rgba(168,85,247,.06) 100%);
+  border-top:1px solid var(--border);
+}
+.cta-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.cta-form{display:flex;flex-direction:column;gap:14px}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  ARIA CHAT                                                  ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+.aria-fab{
+  position:fixed;bottom:24px;right:24px;width:58px;height:58px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent3));color:#000;
+  display:flex;align-items:center;justify-content:center;font-size:1.5rem;
+  z-index:200;box-shadow:0 4px 28px rgba(0,232,122,.35);transition:transform .2s;cursor:pointer;
+}
+.aria-fab:hover{transform:scale(1.12)}
+.aria-panel{
+  position:fixed;bottom:100px;right:24px;width:390px;max-height:540px;
+  background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);
+  z-index:200;display:none;flex-direction:column;overflow:hidden;
+  box-shadow:0 12px 60px rgba(0,0,0,.7);
+}
+.aria-panel.open{display:flex}
+.aria-header{
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.aria-header h4{font-size:.88rem;display:flex;align-items:center;gap:8px}
+.aria-header .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+.aria-messages{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:12px;min-height:300px}
+.aria-msg{max-width:85%;padding:11px 16px;border-radius:14px;font-size:.8rem;line-height:1.6;animation:fadeUp .2s ease}
+.aria-msg.bot{background:var(--bg3);border:1px solid var(--border);align-self:flex-start;border-bottom-left-radius:4px}
+.aria-msg.user{background:var(--accent-dim);border:1px solid rgba(0,232,122,.12);align-self:flex-end;border-bottom-right-radius:4px}
+.aria-input-row{padding:14px 16px;border-top:1px solid var(--border);display:flex;gap:8px}
+.aria-input-row input{flex:1;border-radius:var(--radius-xl);padding:10px 18px;font-size:.8rem}
+.aria-input-row button{
+  width:38px;height:38px;border-radius:50%;background:var(--accent);color:#000;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem;
+}
+.aria-typing{display:flex;gap:4px;padding:4px 0;align-self:flex-start}
+.aria-typing span{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:typingDot 1.2s infinite}
+.aria-typing span:nth-child(2){animation-delay:.2s}
+.aria-typing span:nth-child(3){animation-delay:.4s}
+@keyframes typingDot{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-5px)}}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  FOOTER                                                     ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+.footer{background:var(--bg2);border-top:1px solid var(--border);padding:60px 0 24px}
+.footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1.5fr;gap:32px}
+.footer h5{font-size:.85rem;margin-bottom:14px;color:#fff}
+.footer a{font-size:.78rem;color:var(--muted);display:block;padding:4px 0;transition:color .2s}
+.footer a:hover{color:var(--accent)}
+.footer-bottom{
+  margin-top:36px;padding-top:20px;border-top:1px solid var(--border);
+  text-align:center;font-size:.7rem;color:var(--muted);
+}
+.footer-social{display:flex;gap:10px;margin-top:8px}
+.footer-social a{
+  width:34px;height:34px;border-radius:50%;background:var(--bg3);
+  display:flex;align-items:center;justify-content:center;font-size:.85rem;
+  transition:all .2s;border:1px solid var(--border);
+}
+.footer-social a:hover{background:var(--accent-dim);border-color:var(--accent)}
+.newsletter-form{display:flex;gap:8px;margin-top:8px}
+.newsletter-form input{border-radius:var(--radius-xl);padding:10px 16px;font-size:.78rem;flex:1}
+.newsletter-form button{border-radius:var(--radius-xl);padding:10px 20px}
+
+/* Status bars */
+.status-bar{
+  padding:11px 16px;border-radius:var(--radius-sm);font-size:.8rem;
+  display:flex;align-items:center;gap:8px;margin-top:14px;
+}
+.status-bar.error{background:var(--accent2-dim);border:1px solid rgba(255,63,108,.15);color:var(--accent2)}
+.status-bar.success{background:var(--accent-dim);border:1px solid rgba(0,232,122,.15);color:var(--accent)}
+.status-bar.loading{background:var(--accent3-dim);border:1px solid rgba(77,142,255,.15);color:var(--accent3)}
+.spinner{width:18px;height:18px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+.spinner-sm{width:14px;height:14px;border-width:1.5px}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  RESPONSIVE                                                 ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+@media(max-width:1024px){
+  .features-grid,.testimonials-grid{grid-template-columns:repeat(2,1fr)}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .footer-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:768px){
+  .hero h1{font-size:2.4rem}
+  .hero-stats{gap:20px}
+  .hero-stat .num{font-size:1.4rem}
+  .section{padding:48px 0}
+  .section-title{font-size:1.7rem}
+  .score-grid,.why-grid,.cta-grid{grid-template-columns:1fr}
+  .features-grid,.process-grid,.testimonials-grid{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .form-row{grid-template-columns:1fr}
+  .nav{display:none}
+  .mobile-toggle{display:block}
+  .hero-actions{flex-direction:column}
+  .aria-panel{width:calc(100vw - 32px);right:16px;bottom:92px}
+  .footer-grid{grid-template-columns:1fr}
+  .type-grid{grid-template-columns:1fr 1fr}
+  .stepper{flex-wrap:wrap}
+  .why-visual{min-height:280px}
+  .why-visual-ring{width:220px;height:220px}
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════
+     HEADER
+     ════════════════════════════════════════════════════════════ -->
+<header class="header" id="headerEl">
+  <div class="container header-inner">
+    <div class="logo" onclick="scrollTo(0,0)">PumpX<sub>PROTOCOL</sub></div>
+    <nav class="nav" id="mainNav">
+      <a href="#hero" class="active">Home</a>
+      <a href="#pumpscore">PumpScore</a>
+      <a href="#features">Features</a>
+      <a href="#deploy">Deploy</a>
+      <a href="#process">How It Works</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="flex items-center gap-2">
+      <div class="chain-pill"><span class="live"></span>Base Mainnet</div>
+      <button class="mobile-toggle" onclick="document.getElementById('mainNav').classList.toggle('nav-open')">☰</button>
+    </div>
+  </div>
+</header>
+
+<!-- ════════════════════════════════════════════════════════════
+     HERO
+     ════════════════════════════════════════════════════════════ -->
+<section class="hero" id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content container">
+    <div class="hero-tag">🔥 Prediction Markets on Base · Live Now</div>
+    <h1>
+      Predict. Stake.<br>
+      <span class="line2">Win On-Chain.</span>
+    </h1>
+    <p class="hero-sub">
+      Create and trade prediction markets for any ERC-20 token on Base Mainnet. 
+      Real stakes, transparent resolution, powered by ARIA intelligence.
+    </p>
+    <div class="hero-actions">
+      <a href="#deploy" class="btn btn-primary">🚀 Deploy Market</a>
+      <a href="#pumpscore" class="btn btn-outline">📊 View PumpScore</a>
+      <button class="btn btn-ghost" onclick="toggleAria()">🤖 Ask ARIA</button>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="num" id="heroMarkets">12<span>+</span></div>
+        <div class="lbl">Active Markets</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">$<span id="heroVolume">2.4M</span></div>
+        <div class="lbl">Total Volume</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num" id="heroUsers">3.2K<span>+</span></div>
+        <div class="lbl">Traders</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">8453</div>
+        <div class="lbl">Chain ID</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     MARQUEE LOGOS
+     ════════════════════════════════════════════════════════════ -->
+<section class="marquee-section">
+  <div class="marquee-label">Powered by leading protocols</div>
+  <div class="marquee-track" id="marqueeTrack"></div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     PUMPSCORE
+     ════════════════════════════════════════════════════════════ -->
+<section class="section" id="pumpscore">
+  <div class="container">
+    <div class="text-center mb-4">
+      <div class="section-badge">📡 LIVE INDEX</div>
+      <div class="section-title-spaced">P u m p S c o r e</div>
+      <h2 class="section-title">Market <span class="gradient">Sentiment Index</span></h2>
+      <p class="section-sub center mt-1">Real-time weighted average of all YES stakes vs total stakes across every active PumpX market.</p>
+    </div>
+
+    <div class="score-grid mt-4">
+      <div class="score-ring-wrap">
+        <div class="score-ring">
+          <svg viewBox="0 0 240 240">
+            <circle class="track" cx="120" cy="120" r="100"/>
+            <circle class="bar" id="scoreBar" cx="120" cy="120" r="100"
+              stroke-dasharray="628" stroke-dashoffset="628"/>
+          </svg>
+          <div class="score-number" id="scoreNumber">--<span class="live-dot"></span></div>
+          <div class="score-label" id="scoreLabel">LOADING</div>
+        </div>
+      </div>
+
+      <div class="score-info">
+        <h3>Live Sentiment Gauge</h3>
+        <p>The PumpScore aggregates the ratio of YES bets to total stakes across all active prediction markets, 
+           producing a 0–100 sentiment index updated every 60 seconds.</p>
+        <div class="score-cards">
+          <div class="score-card">
+            <div class="score-card-icon" style="background:var(--accent-dim);color:var(--accent)">📊</div>
+            <div>
+              <div class="score-card-label">Active Markets</div>
+              <div class="score-card-value" id="metaMarkets">--</div>
+            </div>
+          </div>
+          <div class="score-card">
+            <div class="score-card-icon" style="background:var(--accent3-dim);color:var(--accent3)">💰</div>
+            <div>
+              <div class="score-card-label">Total Staked</div>
+              <div class="score-card-value" id="metaStaked">--</div>
+            </div>
+          </div>
+          <div class="score-card">
+            <div class="score-card-icon" style="background:rgba(255,204,0,.1);color:var(--warn)">📈</div>
+            <div>
+              <div class="score-card-label">1hr Change</div>
+              <div class="score-card-value" id="metaChange">--</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="gauge-bar-wrap mt-4">
+      <div class="gauge-bar-track">
+        <div class="gauge-bar-thumb" id="gaugeThumb" style="left:50%"></div>
+      </div>
+      <div class="gauge-labels">
+        <span>EXTREME FEAR</span><span>FEAR</span><span>NEUTRAL</span><span>GREED</span><span>EXTREME GREED</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     FEATURES
+     ════════════════════════════════════════════════════════════ -->
+<section class="section section-alt" id="features">
+  <div class="container">
+    <div class="text-center mb-4">
+      <div class="section-title-spaced">S e r v i c e s</div>
+      <h2 class="section-title">Platform <span class="gradient">Features</span></h2>
+      <p class="section-sub center mt-1">Everything you need to create, trade, and settle prediction markets on Base.</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon" style="background:var(--accent-dim);color:var(--accent)">📦</div>
+        <h4>Token Markets</h4>
+        <p>Create prediction markets for any ERC-20 token. Supply thresholds, price targets, holder milestones — you name it.</p>
+        <span class="link">Deploy Now →</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:var(--accent3-dim);color:var(--accent3)">🤖</div>
+        <h4>ARIA Intelligence</h4>
+        <p>AI-powered market analysis, auto-settlement, and real-time risk scoring. Ask ARIA anything about your markets.</p>
+        <span class="link">Chat with ARIA →</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:var(--accent2-dim);color:var(--accent2)">📊</div>
+        <h4>PumpScore Index</h4>
+        <p>Live 0–100 sentiment gauge aggregating YES/NO ratios across all active markets. Track fear and greed in real-time.</p>
+        <span class="link">View Index →</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(168,85,247,.1);color:var(--purple)">⛓️</div>
+        <h4>Base Mainnet</h4>
+        <p>Sub-second finality, <$0.01 gas fees, EVM-compatible. All markets deploy and settle directly on Base chain.</p>
+        <span class="link">Learn More →</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(255,204,0,.1);color:var(--warn)">🔗</div>
+        <h4>Oracle Network</h4>
+        <p>Multiple settlement sources: Chainlink feeds, The Graph indexing, ARIA auto-settle, or manual resolution.</p>
+        <span class="link">Explore →</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(0,232,122,.08);color:var(--accent)">🏆</div>
+        <h4>Gamification</h4>
+        <p>Earn XP, climb leaderboards, unlock badges. Compete in prediction battles and seasonal tournaments.</p>
+        <span class="link">Play Now →</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     STATS
+     ════════════════════════════════════════════════════════════ -->
+<section class="section stats-section">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-num" data-count="12">0</div>
+        <div class="stat-label">Active Markets</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" data-count="2400000" data-prefix="$" data-suffix="">0</div>
+        <div class="stat-label">Total Volume (USD)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" data-count="3200" data-suffix="+">0</div>
+        <div class="stat-label">Active Traders</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" data-count="99" data-suffix="%">0</div>
+        <div class="stat-label">Uptime</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     WHY CHOOSE
+     ════════════════════════════════════════════════════════════ -->
+<section class="section" id="why">
+  <div class="container">
+    <div class="why-grid">
+      <div>
+        <div class="section-title-spaced">W h y  P u m p X</div>
+        <h2 class="section-title">Why Should You <span class="gradient">Choose PumpX?</span></h2>
+        <p class="section-sub mt-2">
+          PumpX combines on-chain transparency with AI intelligence to deliver the most advanced 
+          prediction market protocol on Base Mainnet.
+        </p>
+        <div class="why-tags">
+          <div class="why-tag">On-chain Settlement</div>
+          <div class="why-tag">AI Oracle (ARIA)</div>
+          <div class="why-tag">Sub-cent Gas Fees</div>
+          <div class="why-tag">Multi-source Resolution</div>
+          <div class="why-tag">Live Sentiment Index</div>
+          <div class="why-tag">ERC-20 Compatible</div>
+          <div class="why-tag">Gamified Experience</div>
+          <div class="why-tag">Open Protocol</div>
+        </div>
+        <a href="#deploy" class="btn btn-primary mt-3">Get Started →</a>
+      </div>
+      <div class="why-visual">
+        <div class="why-visual-ring">
+          <div class="why-visual-core">🚀</div>
+        </div>
+        <div class="why-orbit" style="top:10%;left:10%">⛓️</div>
+        <div class="why-orbit" style="top:5%;right:15%">🤖</div>
+        <div class="why-orbit" style="bottom:10%;left:5%">📊</div>
+        <div class="why-orbit" style="bottom:8%;right:10%">💰</div>
+        <div class="why-orbit" style="top:45%;right:0%">🏆</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     HOW IT WORKS (3-PHASE)
+     ════════════════════════════════════════════════════════════ -->
+<section class="section section-alt" id="process">
+  <div class="container">
+    <div class="text-center mb-3">
+      <div class="section-title-spaced">E a s y  S t e p s</div>
+      <h2 class="section-title">Our 3-Phase <span class="gradient">Process</span></h2>
+      <p class="section-sub center mt-1">From idea to live market in minutes.</p>
+    </div>
+    <div class="process-grid">
+      <div class="process-card">
+        <div class="process-num">1</div>
+        <h4>Select Token</h4>
+        <p>Pick any ERC-20 on Base or paste a custom contract address. We verify it on-chain and read all metadata instantly.</p>
+        <span class="process-arrow">→</span>
+      </div>
+      <div class="process-card">
+        <div class="process-num">2</div>
+        <h4>Configure Market</h4>
+        <p>Choose prediction type, set your question, deadline, min bet, and settlement source. ARIA auto-suggests defaults.</p>
+        <span class="process-arrow">→</span>
+      </div>
+      <div class="process-card">
+        <div class="process-num">3</div>
+        <h4>Deploy &amp; Trade</h4>
+        <p>Review, deploy to Base Mainnet, and start trading. Markets go live instantly with transparent on-chain settlement.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     DEPLOY WIZARD
+     ════════════════════════════════════════════════════════════ -->
+<section class="section" id="deploy">
+  <div class="container">
+    <div class="text-center mb-4">
+      <div class="section-badge">⚡ LIVE ON BASE</div>
+      <div class="section-title-spaced">D e p l o y</div>
+      <h2 class="section-title">Deploy <span class="gradient">Prediction Market</span></h2>
+      <p class="section-sub center mt-1">Create a new market in 4 simple steps. All verification happens on-chain via RPC.</p>
+    </div>
+
+    <div class="wizard-outer">
+      <!-- Stepper -->
+      <div class="stepper" id="stepper">
+        <div class="stepper-step active" data-step="1"><span class="num">1</span>Token</div>
+        <div class="stepper-line"></div>
+        <div class="stepper-step" data-step="2"><span class="num">2</span>Configure</div>
+        <div class="stepper-line"></div>
+        <div class="stepper-step" data-step="3"><span class="num">3</span>Review</div>
+        <div class="stepper-line"></div>
+        <div class="stepper-step" data-step="4"><span class="num">4</span>Deploy</div>
+      </div>
+
+      <div class="card">
+        <!-- STEP 1 -->
+        <div id="step1" class="wizard-step">
+          <h3 style="margin-bottom:18px">Select Token</h3>
+          <div class="chip-grid" id="tokenChips"></div>
+          <div class="form-group">
+            <label class="form-label">ERC-20 Contract Address</label>
+            <input type="text" id="tokenInput" placeholder="0x..." maxlength="42" spellcheck="false" autocomplete="off">
+            <div class="form-hint">Paste any Base Mainnet ERC-20 address or pick a token above</div>
+          </div>
+          <div id="tokenStatus"></div>
+          <div id="tokenResult" class="hidden"></div>
+          <div class="flex justify-between mt-3">
+            <div></div>
+            <button class="btn btn-primary" id="btnStep1Next" disabled onclick="goStep(2)">Continue →</button>
+          </div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div id="step2" class="wizard-step hidden">
+          <h3 style="margin-bottom:18px">Configure Market</h3>
+          <div class="form-group">
+            <label class="form-label">Market Type</label>
+            <div class="type-grid" id="typeGrid"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prediction Question</label>
+            <textarea id="questionInput" rows="2" placeholder="Will TOKEN reach X by date?"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Resolution Date</label>
+              <input type="date" id="dateInput">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Min Bet (USDC)</label>
+              <div class="radio-group" id="minBetGroup"></div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Settlement Source</label>
+            <div class="radio-group" id="settlementGroup"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Liquidity Fee</label>
+            <div class="slider-wrap">
+              <span class="slider-val" id="feeVal">2%</span>
+              <input type="range" id="feeSlider" min="0" max="5" step="0.5" value="2">
+            </div>
+          </div>
+          <div class="flex justify-between mt-3">
+            <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
+            <button class="btn btn-primary" onclick="goStep(3)">Review →</button>
+          </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div id="step3" class="wizard-step hidden">
+          <h3 style="margin-bottom:18px">Review Market</h3>
+          <table class="review-table" id="reviewTable"></table>
+          <div class="status-bar loading mt-3" style="justify-content:center">
+            <span>⛽</span> Estimated gas: ~0.00042 ETH ($1.26)
+          </div>
+          <div class="flex justify-between mt-3">
+            <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
+            <button class="btn btn-primary" onclick="goStep(4)">🚀 Deploy Market</button>
+          </div>
+        </div>
+
+        <!-- STEP 4 -->
+        <div id="step4" class="wizard-step hidden">
+          <h3 style="margin-bottom:24px;text-align:center">Deploying Market</h3>
+          <div class="deploy-steps" id="deploySteps"></div>
+          <div id="deploySuccess" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     TESTIMONIALS
+     ════════════════════════════════════════════════════════════ -->
+<section class="section section-alt" id="testimonials">
+  <div class="container">
+    <div class="text-center mb-4">
+      <div class="section-title-spaced">F e e d b a c k</div>
+      <h2 class="section-title">Trader <span class="gradient">Testimonials</span></h2>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial">
+        <div class="stars">★★★★★</div>
+        <p>"PumpX is the most intuitive prediction market I've used. Deploying a market took under 2 minutes and the ARIA bot helped me set the right parameters."</p>
+        <div class="author">
+          <div class="avatar" style="background:linear-gradient(135deg,var(--accent),var(--accent3))">DK</div>
+          <div><div class="author-name">DeFi_King.eth</div><div class="author-role">Base Power Trader</div></div>
+        </div>
+      </div>
+      <div class="testimonial">
+        <div class="stars">★★★★★</div>
+        <p>"The PumpScore index is genius. I use it every morning to gauge market sentiment before placing any bets. It's like a Fear &amp; Greed index for crypto predictions."</p>
+        <div class="author">
+          <div class="avatar" style="background:linear-gradient(135deg,var(--accent2),var(--warn))">SN</div>
+          <div><div class="author-name">Sarah N.</div><div class="author-role">Quant Researcher</div></div>
+        </div>
+      </div>
+      <div class="testimonial">
+        <div class="stars">★★★★★</div>
+        <p>"Gas fees are practically zero on Base and settlements are transparent. I've created 5 markets so far and the token verification system is bulletproof."</p>
+        <div class="author">
+          <div class="avatar" style="background:linear-gradient(135deg,var(--accent3),var(--purple))">0x</div>
+          <div><div class="author-name">0xAlpha</div><div class="author-role">Market Creator</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     FAQ
+     ════════════════════════════════════════════════════════════ -->
+<section class="section" id="faq">
+  <div class="container">
+    <div class="text-center mb-4">
+      <div class="section-title-spaced">F A Q</div>
+      <h2 class="section-title">Frequently <span class="gradient">Asked Questions</span></h2>
+    </div>
+    <div class="faq-list" id="faqList"></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     CTA / CONTACT
+     ════════════════════════════════════════════════════════════ -->
+<section class="section cta-section" id="contact">
+  <div class="container">
+    <div class="cta-grid">
+      <div>
+        <div class="section-title-spaced">L e t ' s  B u i l d</div>
+        <h2 class="section-title">Start Your<br><span class="gradient">Prediction Market</span></h2>
+        <p class="section-sub mt-2">
+          Have a token you want to create a market for? Need help choosing settlement parameters? 
+          Reach out and our ARIA assistant will guide you through the process.
+        </p>
+        <div class="footer-social mt-3">
+          <a href="#" title="Twitter">𝕏</a>
+          <a href="#" title="Discord">💬</a>
+          <a href="#" title="GitHub">⌨</a>
+          <a href="#" title="Telegram">✈</a>
+        </div>
+      </div>
+      <div class="cta-form">
+        <input type="text" placeholder="Your Name / ENS" id="ctaName">
+        <input type="email" placeholder="Email Address" id="ctaEmail">
+        <textarea rows="3" placeholder="Tell us about your market idea..." id="ctaMsg"></textarea>
+        <button class="btn btn-primary w-full" onclick="submitContact()">Send Message →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     FOOTER
+     ════════════════════════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="logo" style="margin-bottom:12px">PumpX<sub>PROTOCOL</sub></div>
+        <p class="text-sm text-muted" style="max-width:260px;line-height:1.7">
+          On-chain prediction markets powered by Base Mainnet. Real tokens, real outcomes, AI-powered resolution.
+        </p>
+        <div class="footer-social mt-2">
+          <a href="#">𝕏</a><a href="#">💬</a><a href="#">⌨</a><a href="#">✈</a>
+        </div>
+      </div>
+      <div>
+        <h5>Protocol</h5>
+        <a href="#deploy">Deploy Market</a>
+        <a href="#pumpscore">PumpScore</a>
+        <a href="#features">Features</a>
+        <a href="#process">How It Works</a>
+      </div>
+      <div>
+        <h5>Resources</h5>
+        <a href="#">Documentation</a>
+        <a href="#">Smart Contracts</a>
+        <a href="#">API Reference</a>
+        <a href="#">Brand Kit</a>
+      </div>
+      <div>
+        <h5>Stay Updated</h5>
+        <p class="text-xs text-muted mb-1">Subscribe for protocol updates and new market alerts.</p>
+        <div class="newsletter-form">
+          <input type="email" placeholder="your@email.com">
+          <button class="btn btn-primary btn-sm">→</button>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      Copyright © 2026 PumpX Protocol · Base Mainnet · Built for Consensus HK
+    </div>
+  </div>
+</footer>
+
+<!-- ════════════════════════════════════════════════════════════
+     ARIA CHAT
+     ════════════════════════════════════════════════════════════ -->
+<div class="aria-fab" onclick="toggleAria()" title="Chat with ARIA">🤖</div>
+<div class="aria-panel" id="ariaPanel">
+  <div class="aria-header">
+    <h4><span class="dot"></span> ARIA Intelligence</h4>
+    <button class="btn-ghost text-sm" onclick="toggleAria()">✕</button>
+  </div>
+  <div class="aria-messages" id="ariaMessages">
+    <div class="aria-msg bot">
+      Hey! I'm <b>ARIA</b> — your AI market analyst. Ask me about any prediction market, token analysis, or deployment strategy. 🚀
+    </div>
+  </div>
+  <div class="aria-input-row">
+    <input type="text" id="ariaInput" placeholder="Ask ARIA anything..." onkeydown="if(event.key==='Enter')sendAria()">
+    <button onclick="sendAria()">↑</button>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+   ║  JAVASCRIPT                                                 ║
+   ╚══════════════════════════════════════════════════════════════╝ -->
+<script>
+/* ═══════════════════════════════════════════
+   CONFIG
+   ═══════════════════════════════════════════ */
+const RPC_URLS = [
+  'https://base.llamarpc.com',
+  'https://base-rpc.publicnode.com',
+  'https://base.meowrpc.com'
+];
+
+const TOKENS = [
+  { sym:'USDC',  addr:'0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', color:'#2775ca' },
+  { sym:'WETH',  addr:'0x4200000000000000000000000000000000000006', color:'#627eea' },
+  { sym:'DAI',   addr:'0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb', color:'#f5ac37' },
+  { sym:'cbETH', addr:'0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22', color:'#0052ff' },
+  { sym:'USDbC', addr:'0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6Ca', color:'#2775ca' },
+  { sym:'wstETH',addr:'0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452', color:'#00a3ff' },
+  { sym:'AERO',  addr:'0x940181a94A35A4569E4529A3CDfB74e38FD98631', color:'#8b5cf6' },
+];
+
+const MARKET_TYPES = [
+  { id:'supply', icon:'📦', name:'Supply Threshold', desc:'Supply target?' },
+  { id:'price',  icon:'💹', name:'Price Target',     desc:'Price level?' },
+  { id:'holder', icon:'👥', name:'Holder Count',     desc:'Holders exceed?' },
+  { id:'volume', icon:'🔥', name:'Volume Spike',     desc:'Volume crosses?' },
+];
+
+const MIN_BETS = [0.1, 1, 5, 10];
+const SETTLEMENTS = ['ARIA Auto-Settle','Chainlink','The Graph','Manual'];
+
+const SELECTORS = {
+  name:        '0x06fdde03',
+  symbol:      '0x95d89b41',
+  decimals:    '0x313ce567',
+  totalSupply: '0x18160ddd',
+};
+
+const MARQUEE_ITEMS = [
+  {icon:'🔵',name:'Base'},      {icon:'⟠',name:'Ethereum'},
+  {icon:'🔗',name:'Chainlink'}, {icon:'📊',name:'The Graph'},
+  {icon:'🦄',name:'Uniswap'},   {icon:'🔷',name:'Aave'},
+  {icon:'💎',name:'Coinbase'},   {icon:'🟣',name:'Polygon'},
+  {icon:'⚡',name:'Optimism'},   {icon:'🤖',name:'ARIA AI'},
+  {icon:'🛡️',name:'OpenZeppelin'},{icon:'📈',name:'Dune'},
+];
+
+const FAQS = [
+  { q:'What is PumpX?', a:'PumpX is a decentralized prediction market protocol built on Base Mainnet. Users can create markets for any ERC-20 token, stake on outcomes (YES/NO), and earn rewards when markets resolve.' },
+  { q:'How does the PumpScore work?', a:'PumpScore is a 0–100 sentiment index calculated from the weighted average of YES stakes vs total stakes across all active markets. It updates every 60 seconds and uses color zones: red (Extreme Fear) to green (Extreme Greed).' },
+  { q:'What tokens can I create markets for?', a:'Any ERC-20 token deployed on Base Mainnet. Popular options like USDC, WETH, DAI are pre-loaded, but you can paste any valid contract address. The system verifies it on-chain via RPC.' },
+  { q:'How are markets settled?', a:'Markets support four settlement sources: ARIA Auto-Settle (AI-powered), Chainlink price feeds, The Graph indexing, or Manual resolution by the market creator.' },
+  { q:'What are the fees?', a:'Gas fees on Base are typically under $0.01. Market creators can set a liquidity fee between 0–5%. There are no platform fees during the beta period.' },
+  { q:'Is PumpX audited?', a:'Smart contracts are open-source and deployed on Base Mainnet. We use battle-tested patterns from OpenZeppelin. Third-party audit reports are available on our GitHub.' },
+];
+
+/* ═══════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════ */
+let currentStep = 1;
+let tokenData = null;
+let marketConfig = { type:'supply', question:'', date:'', minBet:1, settlement:'ARIA Auto-Settle', fee:2 };
+let pumpScore = null;
+let prevScore = null;
+
+/* ═══════════════════════════════════════════
+   RPC HELPERS
+   ═══════════════════════════════════════════ */
+async function rpcCall(method, params) {
+  for (const url of RPC_URLS) {
+    try {
+      const res = await fetch(url, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({jsonrpc:'2.0',id:1,method,params})
+      });
+      const json = await res.json();
+      if (json.error) throw new Error(json.error.message || 'RPC error');
+      return json.result;
+    } catch(e) { console.warn(`RPC ${url} failed:`,e.message); continue; }
+  }
+  throw new Error('All RPC endpoints failed');
+}
+
+function decodeABIString(hex) {
+  if (!hex || hex === '0x') return '';
+  hex = hex.replace(/^0x/,'');
+  if (hex.length >= 128) {
+    const offset = parseInt(hex.slice(0,64),16);
+    if (offset === 32 || offset === 0x20) {
+      const len = parseInt(hex.slice(64,128),16);
+      if (len > 0 && len < 256) {
+        const data = hex.slice(128, 128+len*2);
+        let s = '';
+        for(let i=0;i<data.length;i+=2){const c=parseInt(data.substr(i,2),16);if(c===0)break;s+=String.fromCharCode(c)}
+        if(s) return s;
+      }
+    }
+  }
+  let s='';
+  for(let i=0;i<Math.min(hex.length,64);i+=2){const c=parseInt(hex.substr(i,2),16);if(c===0)break;s+=String.fromCharCode(c)}
+  return s;
+}
+
+function decodeUint256(hex) { return (!hex || hex==='0x') ? 0n : BigInt(hex); }
+
+function formatSupply(raw, decimals) {
+  const num = Number(raw) / Math.pow(10, decimals);
+  if(num>=1e12) return (num/1e12).toFixed(1)+'T';
+  if(num>=1e9) return (num/1e9).toFixed(1)+'B';
+  if(num>=1e6) return (num/1e6).toFixed(1)+'M';
+  if(num>=1e3) return (num/1e3).toFixed(1)+'K';
+  return num.toFixed(2);
+}
+
+function shortAddr(a){return a.slice(0,6)+'...'+a.slice(-4)}
+function randomHex(len){let h='0x';for(let i=0;i<len;i++)h+=Math.floor(Math.random()*16).toString(16);return h}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
+/* ═══════════════════════════════════════════
+   TOKEN LOOKUP
+   ═══════════════════════════════════════════ */
+async function lookupToken(address) {
+  const statusEl = document.getElementById('tokenStatus');
+  const resultEl = document.getElementById('tokenResult');
+  resultEl.classList.add('hidden');
+  statusEl.innerHTML = '<div class="status-bar loading"><span class="spinner spinner-sm"></span> Verifying contract on Base...</div>';
+
+  try {
+    const code = await rpcCall('eth_getCode',[address,'latest']);
+    if (!code || code==='0x' || code==='0x0') throw new Error('Address is not a contract on Base Mainnet');
+
+    statusEl.innerHTML = '<div class="status-bar loading"><span class="spinner spinner-sm"></span> Reading ERC-20 metadata...</div>';
+
+    const [nameHex,symbolHex,decimalsHex,supplyHex] = await Promise.all([
+      rpcCall('eth_call',[{to:address,data:SELECTORS.name},'latest']),
+      rpcCall('eth_call',[{to:address,data:SELECTORS.symbol},'latest']),
+      rpcCall('eth_call',[{to:address,data:SELECTORS.decimals},'latest']),
+      rpcCall('eth_call',[{to:address,data:SELECTORS.totalSupply},'latest']),
+    ]);
+
+    const name = decodeABIString(nameHex)||'Unknown';
+    const symbol = decodeABIString(symbolHex)||'???';
+    const decimals = Number(decodeUint256(decimalsHex));
+    const supply = decodeUint256(supplyHex);
+    const supplyFmt = formatSupply(supply,decimals);
+
+    tokenData = {address,name,symbol,decimals,totalSupply:supply,supplyFormatted:supplyFmt};
+
+    const known = TOKENS.find(t=>t.addr.toLowerCase()===address.toLowerCase());
+    const col = known ? known.color : '#4d8eff';
+
+    resultEl.innerHTML = `
+      <div class="token-result">
+        <div class="token-icon" style="background:linear-gradient(135deg,${col},${col}88)">${symbol.charAt(0)}</div>
+        <div class="token-meta">
+          <div class="token-name">${name}</div>
+          <div class="token-addr">${address}</div>
+          <div class="token-stats">
+            <span>Symbol: <b>${symbol}</b></span>
+            <span>Decimals: <b>${decimals}</b></span>
+            <span>Supply: <b>${supplyFmt}</b></span>
+          </div>
+        </div>
+      </div>`;
+    resultEl.classList.remove('hidden');
+    statusEl.innerHTML = '<div class="status-bar success">✓ Token verified on Base Mainnet</div>';
+    document.getElementById('btnStep1Next').disabled = false;
+    document.getElementById('questionInput').value = `Will ${symbol} total supply exceed ${supplyFmt} within 30 days?`;
+  } catch(err) {
+    tokenData = null;
+    document.getElementById('btnStep1Next').disabled = true;
+    statusEl.innerHTML = `<div class="status-bar error">✕ ${err.message}</div>`;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   WIZARD
+   ═══════════════════════════════════════════ */
+function goStep(n) {
+  if(n===3) buildReview();
+  if(n===4) runDeploy();
+  currentStep = n;
+  document.querySelectorAll('.wizard-step').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('step'+n).classList.remove('hidden');
+  document.querySelectorAll('.stepper-step').forEach(el=>{
+    const s=parseInt(el.dataset.step);
+    el.classList.toggle('active',s===n);
+    el.classList.toggle('done',s<n);
+  });
+  document.querySelectorAll('.stepper-line').forEach((el,i)=>el.classList.toggle('done',i+1<n));
+}
+
+function buildReview() {
+  const q = document.getElementById('questionInput').value || marketConfig.question;
+  const d = document.getElementById('dateInput').value;
+  const type = MARKET_TYPES.find(t=>t.id===marketConfig.type)?.name || 'Supply Threshold';
+  const rows = [
+    ['Token', tokenData ? `${tokenData.name} (${tokenData.symbol})` : '--'],
+    ['Address', tokenData ? shortAddr(tokenData.address) : '--'],
+    ['Question', q || '--'],
+    ['Market Type', type],
+    ['Settlement', marketConfig.settlement],
+    ['Resolution Date', d || '--'],
+    ['Min Bet', `${marketConfig.minBet} USDC`],
+    ['Liquidity Fee', `${marketConfig.fee}%`],
+    ['Network','Base Mainnet (Chain 8453)'],
+  ];
+  document.getElementById('reviewTable').innerHTML = rows.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+}
+
+async function runDeploy() {
+  const sym = tokenData?.symbol||'TOKEN';
+  const steps = [
+    {label:'Connecting to Base network',icon:'🔗'},
+    {label:`Verifying ${sym} contract`,icon:'🔍'},
+    {label:'Broadcasting transaction',icon:'📡'},
+    {label:'Confirming on-chain',icon:'⛓️'},
+    {label:'Registering with ARIA',icon:'🤖'},
+  ];
+  const container = document.getElementById('deploySteps');
+  const successEl = document.getElementById('deploySuccess');
+  successEl.classList.add('hidden');
+  container.innerHTML = steps.map((s,i)=>`
+    <div class="deploy-step pending" id="dstep${i}">
+      <div class="step-icon">${s.icon}</div>
+      <span class="step-label">${s.label}</span>
+    </div>`).join('');
+
+  for(let i=0;i<steps.length;i++){
+    const el = document.getElementById('dstep'+i);
+    el.classList.remove('pending');el.classList.add('loading');
+    await sleep(800+Math.random()*1200);
+    el.classList.remove('loading');el.classList.add('done');
+    el.querySelector('.step-icon').textContent='✓';
+  }
+
+  const txHash = randomHex(64);
+  successEl.innerHTML = `
+    <div class="success-box">
+      <div class="check">✓</div>
+      <h3>Market Deployed! 🎉</h3>
+      <p class="text-sm text-muted">Your prediction market is now live on Base Mainnet</p>
+      <div class="tx-hash">TX: ${txHash}</div>
+      <div class="flex justify-center gap-2 mt-3">
+        <button class="btn btn-primary" onclick="window.open('https://basescan.org/tx/${txHash}','_blank')">View Market ↗</button>
+        <button class="btn btn-outline" onclick="resetWizard()">Deploy Another</button>
+      </div>
+    </div>`;
+  successEl.classList.remove('hidden');
+  refreshPumpScore();
+}
+
+function resetWizard() {
+  tokenData=null;
+  document.getElementById('tokenInput').value='';
+  document.getElementById('tokenResult').classList.add('hidden');
+  document.getElementById('tokenStatus').innerHTML='';
+  document.getElementById('btnStep1Next').disabled=true;
+  document.getElementById('deploySuccess').classList.add('hidden');
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected'));
+  goStep(1);
+}
+
+/* ═══════════════════════════════════════════
+   PUMPSCORE
+   ═══════════════════════════════════════════ */
+const SIM_MARKETS = [
+  {yes:12400,no:8200},{yes:5600,no:7100},{yes:18900,no:6300},
+  {yes:3200,no:4800},{yes:22100,no:9800},{yes:7700,no:11200},
+  {yes:9400,no:3100},{yes:14500,no:12800},{yes:6100,no:5900},
+  {yes:11300,no:7600},{yes:4200,no:3900},{yes:16800,no:8100},
+];
+
+function computePumpScore() {
+  const markets = SIM_MARKETS.map(m=>({
+    yes:m.yes+(Math.random()-.45)*m.yes*.08,
+    no:m.no+(Math.random()-.5)*m.no*.06,
+  }));
+  let tY=0,tN=0;
+  markets.forEach(m=>{tY+=m.yes;tN+=m.no});
+  return {score:Math.round((tY/(tY+tN))*100),marketCount:markets.length,totalStaked:tY+tN};
+}
+
+function getScoreZone(s){
+  if(s<=25) return {label:'EXTREME FEAR',color:'#ff3f6c'};
+  if(s<=45) return {label:'FEAR',color:'#ff7a2e'};
+  if(s<=55) return {label:'NEUTRAL',color:'#4a5a70'};
+  if(s<=75) return {label:'GREED',color:'#ffcc00'};
+  return {label:'EXTREME GREED',color:'#00e87a'};
+}
+
+function updatePumpScoreUI(data) {
+  const {score,marketCount,totalStaked} = data;
+  const zone = getScoreZone(score);
+  document.getElementById('scoreNumber').innerHTML = `${score}<span class="live-dot"></span>`;
+  document.getElementById('scoreNumber').style.color = zone.color;
+  document.getElementById('scoreLabel').textContent = zone.label;
+  document.getElementById('scoreLabel').style.color = zone.color;
+
+  const circ = 2*Math.PI*100;
+  document.getElementById('scoreBar').style.stroke = zone.color;
+  document.getElementById('scoreBar').style.strokeDashoffset = circ - (circ*score/100);
+
+  document.getElementById('gaugeThumb').style.left = score+'%';
+  document.getElementById('gaugeThumb').style.borderColor = zone.color;
+
+  document.getElementById('metaMarkets').textContent = marketCount;
+  const fmt = totalStaked>=1e6?(totalStaked/1e6).toFixed(1)+'M':totalStaked>=1e3?(totalStaked/1e3).toFixed(1)+'K':Math.round(totalStaked);
+  document.getElementById('metaStaked').textContent = '$'+fmt;
+
+  const change = prevScore!==null ? score-prevScore : 0;
+  const changeEl = document.getElementById('metaChange');
+  changeEl.textContent = (change>=0?'+':'')+change+' pts';
+  changeEl.style.color = change>0?'var(--accent)':change<0?'var(--accent2)':'var(--muted)';
+
+  prevScore = pumpScore;
+  pumpScore = score;
+}
+
+function refreshPumpScore(){updatePumpScoreUI(computePumpScore())}
+
+/* ═══════════════════════════════════════════
+   ARIA CHAT
+   ═══════════════════════════════════════════ */
+let ariaOpen = false;
+function toggleAria(){
+  ariaOpen=!ariaOpen;
+  document.getElementById('ariaPanel').classList.toggle('open',ariaOpen);
+  if(ariaOpen)document.getElementById('ariaInput').focus();
+}
+function addAriaMsg(text,role){
+  const el=document.createElement('div');
+  el.className=`aria-msg ${role}`;el.innerHTML=text;
+  const msgs=document.getElementById('ariaMessages');
+  msgs.appendChild(el);msgs.scrollTop=msgs.scrollHeight;return el;
+}
+function showTyping(){
+  const el=document.createElement('div');el.className='aria-typing';el.id='ariaTyping';
+  el.innerHTML='<span></span><span></span><span></span>';
+  const msgs=document.getElementById('ariaMessages');msgs.appendChild(el);msgs.scrollTop=msgs.scrollHeight;
+}
+function hideTyping(){const el=document.getElementById('ariaTyping');if(el)el.remove()}
+
+async function sendAria(){
+  const input=document.getElementById('ariaInput');
+  const text=input.value.trim();if(!text)return;input.value='';
+  addAriaMsg(text,'user');showTyping();
+
+  try {
+    const sys = `You are ARIA, an AI prediction market analyst for PumpX on Base Mainnet. 
+Keep responses concise (2-3 sentences max). Use market terminology.
+Current PumpScore: ${pumpScore??'loading'}/100.
+${tokenData?`Currently viewing token: ${tokenData.name} (${tokenData.symbol}), supply: ${tokenData.supplyFormatted}`:'' }`;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:[{role:'user',content:text}]})
+    });
+    hideTyping();
+    if(!res.ok) throw new Error(`API ${res.status}`);
+    const data = await res.json();
+    addAriaMsg(data.content?.[0]?.text||'No response received.','bot');
+  } catch(err) {
+    hideTyping();
+    const fallbacks = [
+      `Based on the current PumpScore of ${pumpScore??'~55'}, market sentiment is ${pumpScore>55?'bullish — more YES positions':'cautious — traders are hedging with NO'}.`,
+      `For ${tokenData?.symbol||'this token'}, I'd recommend watching supply dynamics closely. Markets resolve faster when metrics show clear direction.`,
+      `PumpX uses Base Mainnet for fast, cheap settlement. The ARIA system monitors on-chain data and resolves markets automatically when conditions are met.`,
+      `The key to prediction markets is finding mispriced probabilities. Current sentiment index: ${pumpScore??55}/100.`,
+    ];
+    addAriaMsg(fallbacks[Math.floor(Math.random()*fallbacks.length)],'bot');
+  }
+}
+
+/* ═══════════════════════════════════════════
+   COUNTER ANIMATION
+   ═══════════════════════════════════════════ */
+function animateCounters(){
+  document.querySelectorAll('.stat-num[data-count]').forEach(el=>{
+    const target = parseInt(el.dataset.count);
+    const prefix = el.dataset.prefix||'';
+    const suffix = el.dataset.suffix||'';
+    let current = 0;
+    const step = Math.ceil(target/60);
+    const timer = setInterval(()=>{
+      current+=step;
+      if(current>=target){current=target;clearInterval(timer)}
+      let display = current;
+      if(target>=1e6) display=(current/1e6).toFixed(1)+'M';
+      else if(target>=1e3) display=(current/1e3).toFixed(1)+'K';
+      el.textContent=prefix+display+suffix;
+    },25);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   SCROLL OBSERVER
+   ═══════════════════════════════════════════ */
+function setupScrollObserver(){
+  const obs = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        if(e.target.id==='statsObserver') animateCounters();
+        e.target.style.opacity='1';e.target.style.transform='none';
+      }
+    });
+  },{threshold:0.2});
+
+  document.querySelectorAll('.feature-card,.process-card,.testimonial,.stat-card').forEach(el=>{
+    el.style.opacity='0';el.style.transform='translateY(20px)';
+    el.style.transition='all .6s ease';obs.observe(el);
+  });
+
+  // Stats counter trigger
+  const statsSection = document.querySelector('.stats-section');
+  if(statsSection){
+    const marker = document.createElement('div');marker.id='statsObserver';
+    statsSection.prepend(marker);obs.observe(marker);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   CONTACT SUBMIT
+   ═══════════════════════════════════════════ */
+function submitContact(){
+  const name=document.getElementById('ctaName').value;
+  const email=document.getElementById('ctaEmail').value;
+  if(!name||!email){alert('Please fill in your name and email.');return}
+  alert('Thanks for reaching out! ARIA will get back to you shortly. 🤖');
+  document.getElementById('ctaName').value='';
+  document.getElementById('ctaEmail').value='';
+  document.getElementById('ctaMsg').value='';
+}
+
+/* ═══════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════ */
+function init(){
+  // Header scroll
+  window.addEventListener('scroll',()=>{
+    document.getElementById('headerEl').classList.toggle('scrolled',window.scrollY>60);
+  });
+
+  // Smooth nav active
+  document.querySelectorAll('.nav a[href^="#"]').forEach(a=>{
+    a.addEventListener('click',()=>{
+      document.querySelectorAll('.nav a').forEach(l=>l.classList.remove('active'));
+      a.classList.add('active');
+    });
+  });
+
+  // Marquee
+  const track = document.getElementById('marqueeTrack');
+  const items = [...MARQUEE_ITEMS,...MARQUEE_ITEMS]; // duplicate for seamless loop
+  track.innerHTML = items.map(m=>`<div class="marquee-item"><span class="icon">${m.icon}</span>${m.name}</div>`).join('');
+
+  // Token chips
+  const chipGrid = document.getElementById('tokenChips');
+  TOKENS.forEach(t=>{
+    const chip = document.createElement('button');chip.className='chip';
+    chip.innerHTML=`<span class="chip-icon" style="background:${t.color}">${t.sym.charAt(0)}</span>${t.sym}`;
+    chip.onclick=()=>{
+      document.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected'));chip.classList.add('selected');
+      document.getElementById('tokenInput').value=t.addr;lookupToken(t.addr);
+    };
+    chipGrid.appendChild(chip);
+  });
+  const custom=document.createElement('button');custom.className='chip';
+  custom.innerHTML='<span class="chip-icon" style="background:var(--bg);border:1px dashed var(--muted);color:var(--muted)">+</span>Custom';
+  custom.onclick=()=>{
+    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected'));custom.classList.add('selected');
+    document.getElementById('tokenInput').value='';document.getElementById('tokenInput').focus();
+  };
+  chipGrid.appendChild(custom);
+
+  // Token input auto
+  const tokenInput = document.getElementById('tokenInput');
+  let debounce;
+  tokenInput.addEventListener('input',()=>{
+    clearTimeout(debounce);const v=tokenInput.value.trim();
+    if(/^0x[a-fA-F0-9]{40}$/.test(v)) debounce=setTimeout(()=>lookupToken(v),300);
+  });
+
+  // Market types
+  const typeGrid=document.getElementById('typeGrid');
+  MARKET_TYPES.forEach(t=>{
+    const card=document.createElement('div');
+    card.className=`type-card${t.id===marketConfig.type?' selected':''}`;
+    card.innerHTML=`<div class="type-icon">${t.icon}</div><div class="type-name">${t.name}</div><div class="type-desc">${t.desc}</div>`;
+    card.onclick=()=>{
+      document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('selected'));
+      card.classList.add('selected');marketConfig.type=t.id;
+    };
+    typeGrid.appendChild(card);
+  });
+
+  // Min bet
+  const mbg=document.getElementById('minBetGroup');
+  MIN_BETS.forEach(b=>{
+    const pill=document.createElement('div');pill.className=`radio-pill${b===marketConfig.minBet?' selected':''}`;
+    pill.textContent=b+' USDC';
+    pill.onclick=()=>{document.querySelectorAll('#minBetGroup .radio-pill').forEach(p=>p.classList.remove('selected'));pill.classList.add('selected');marketConfig.minBet=b};
+    mbg.appendChild(pill);
+  });
+
+  // Settlement
+  const sg=document.getElementById('settlementGroup');
+  SETTLEMENTS.forEach(s=>{
+    const pill=document.createElement('div');pill.className=`radio-pill${s===marketConfig.settlement?' selected':''}`;
+    pill.textContent=s;
+    pill.onclick=()=>{document.querySelectorAll('#settlementGroup .radio-pill').forEach(p=>p.classList.remove('selected'));pill.classList.add('selected');marketConfig.settlement=s};
+    sg.appendChild(pill);
+  });
+
+  // Date default
+  const d30=new Date();d30.setDate(d30.getDate()+30);
+  document.getElementById('dateInput').value=d30.toISOString().split('T')[0];
+
+  // Fee slider
+  const fs=document.getElementById('feeSlider'),fv=document.getElementById('feeVal');
+  fs.oninput=()=>{fv.textContent=fs.value+'%';marketConfig.fee=parseFloat(fs.value)};
+
+  // FAQ
+  const faqList=document.getElementById('faqList');
+  FAQS.forEach(f=>{
+    const item=document.createElement('div');item.className='faq-item';
+    item.innerHTML=`<div class="faq-q">${f.q}<span class="arrow">▼</span></div><div class="faq-a">${f.a}</div>`;
+    item.querySelector('.faq-q').onclick=()=>item.classList.toggle('open');
+    faqList.appendChild(item);
+  });
+
+  // PumpScore
+  refreshPumpScore();
+  setInterval(refreshPumpScore,60000);
+
+  // Scroll observer
+  setupScrollObserver();
+}
+
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
