@@ -57,7 +57,8 @@ export const hasWalletConnectProjectId =
 
 const chains = [baseSepolia, base, mainnet, sepolia] as const;
 
-// Provide the wallet factory functions (not invoked) to connectorsForWallets.
+// Provide only wallets that are safe for the current config.
+// MetaMask and WalletConnect both require a real WalletConnect project ID.
 const recommendedWallets = hasWalletConnectProjectId
   ? [
       injectedWallet,
@@ -67,8 +68,6 @@ const recommendedWallets = hasWalletConnectProjectId
     ]
   : [
       injectedWallet,
-      metaMaskWallet,
-      coinbaseWallet,
     ];
 
 const connectors = connectorsForWallets(
