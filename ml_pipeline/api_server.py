@@ -14,7 +14,7 @@ import logging
 import os
 import time
 from functools import lru_cache
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 import uvicorn
@@ -114,32 +114,32 @@ def _sanitize_input(data: dict) -> dict:
 class PredictRequest(BaseModel):
     symbol: str = "UNKNOWN"
     market: str = "US"
-    date: str | None = None
+    date: Optional[str] = None
     source: str = "api"
     series: str = "COMMON"
 
     # Price fields — all optional with safe defaults
-    close: float | None = None
-    open: float | None = None
-    high: float | None = None
-    low: float | None = None
-    prev_close: float | None = None
-    adj_close: float | None = None
-    volume: float | None = None
-    vwap: float | None = None
-    turnover: float | None = None
-    trades: float | None = None
-    deliv_volume: float | None = None
-    pct_deliv: float | None = None
-    market_return_1d: float | None = None
-    market_up_ratio: float | None = None
+    close: Optional[float] = None
+    open: Optional[float] = None
+    high: Optional[float] = None
+    low: Optional[float] = None
+    prev_close: Optional[float] = None
+    adj_close: Optional[float] = None
+    volume: Optional[float] = None
+    vwap: Optional[float] = None
+    turnover: Optional[float] = None
+    trades: Optional[float] = None
+    deliv_volume: Optional[float] = None
+    pct_deliv: Optional[float] = None
+    market_return_1d: Optional[float] = None
+    market_up_ratio: Optional[float] = None
 
     @field_validator("close", "open", "high", "low", "prev_close", "volume",
                      "adj_close", "vwap", "turnover", "trades", "deliv_volume",
                      "pct_deliv", "market_return_1d", "market_up_ratio",
                      mode="before")
     @classmethod
-    def sanitize_float(cls, v: Any) -> float | None:
+    def sanitize_float(cls, v: Any) -> Optional[float]:
         if v is None:
             return None
         try:
