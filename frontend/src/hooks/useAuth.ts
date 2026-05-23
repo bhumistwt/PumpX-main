@@ -3,7 +3,8 @@
  * SIWE sign-in flow wrapper: get nonce → sign → verify → session.
  */
 import { useState, useCallback, useEffect } from 'react';
-import { useAccount, useSignMessage, useDisconnect } from 'wagmi';
+import { useAccount, useDisconnect, useWalletClient, useSignMessage } from 'wagmi';
+import { baseSepolia } from 'wagmi/chains';
 import { SiweMessage } from 'siwe';
 import { useRouter } from 'next/router';
 
@@ -37,6 +38,7 @@ const defaultUser: AuthUser = {
 
 export function useAuth(): UseAuthReturn {
   const { address, chain } = useAccount();
+  const { data: walletClient } = useWalletClient();
   const { signMessageAsync } = useSignMessage();
   const { disconnect } = useDisconnect();
   const router = useRouter();
@@ -74,7 +76,7 @@ export function useAuth(): UseAuthReturn {
   }, [fetchMe]);
 
   const signIn = useCallback(async () => {
-    if (!address || !chain) {
+    if (!address) {
       setError('Please connect your wallet first.');
       return;
     }
@@ -114,14 +116,36 @@ export function useAuth(): UseAuthReturn {
         statement: 'Sign in to PumpX. The decentralized prediction market.',
         uri: window.location.origin,
         version: '1',
-        chainId: chain.id,
+        chainId: chain?.id ?? baseSepolia.id,
         nonce,
       });
 
       const preparedMessage = message.prepareMessage();
 
       // 3. Request wallet signature
-      const signature = await signMessageAsync({ message: preparedMessage });
+      let signature: string;
+      try {
+        if (walletClient) {
+          signature = await walletClient.signMessage({
+            account: address,
+            message: preparedMessage,
+          });
+        } else {
+          signature = await signMessageAsync({ message: preparedMessage });
+        }
+      } catch (signErr) {
+        // Some wallet sessions (especially WalletConnect / injected wallets on
+        // unsupported networks) can fail chain switching inside wagmi.
+        // Fall back to a direct EIP-1193 personal_sign request.
+        if (typeof window !== 'undefined' && (window as any).ethereum?.request) {
+          signature = await (window as any).ethereum.request({
+            method: 'personal_sign',
+            params: [preparedMessage, address],
+          });
+        } else {
+          throw signErr;
+        }
+      }
       console.log('[PumpX] Signature received, verifying...');
 
       // 4. Verify on server
@@ -160,7 +184,7 @@ export function useAuth(): UseAuthReturn {
       clearTimeout(timeoutId);
       setIsSigningIn(false);
     }
-  }, [address, chain, isSigningIn, signMessageAsync, fetchMe, router]);
+  }, [address, chain, isSigningIn, walletClient, fetchMe, router]);
 
   const signOut = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST' });

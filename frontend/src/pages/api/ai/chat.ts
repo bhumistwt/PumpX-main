@@ -81,6 +81,51 @@ function formatTrending(markets: typeof FALLBACK_TRENDING) {
   return markets;
 }
 
+function formatTrendingMessage(markets: typeof FALLBACK_TRENDING): string {
+  if (!markets.length) {
+    return '📊 No active prediction markets found right now. Try again in a moment.';
+  }
+  let msg = `🔥 **Trending Prediction Markets** — Live from Polymarket\n\n`;
+  markets.forEach((m, i) => {
+    msg += `**${i + 1}. ${m.question}**\n`;
+    msg += `   ✅ YES ${m.yesOdds} · 💰 $${m.volume} 24h vol · 🏷 ${m.category}\n\n`;
+  });
+  msg += `_Ask me about any of these, or say "bet YES on #3" to place a bet!_`;
+  return msg;
+}
+
+function buildOfflineReply(
+  lastUserMsg: string,
+  context: {
+    isConnected?: boolean;
+    address?: string;
+    chainId?: number;
+    chainName?: string;
+    ethBalance?: string;
+    activeMarkets?: number;
+    totalVolume?: number;
+  } | undefined,
+  trendingMarkets: typeof FALLBACK_TRENDING,
+): string {
+  if (lastUserMsg.includes('trend') || lastUserMsg.includes('market')) {
+    return formatTrendingMessage(trendingMarkets);
+  }
+
+  if (lastUserMsg.includes('sentiment') || lastUserMsg.includes('pumpscore')) {
+    return `📈 **Protocol sentiment snapshot**\n\nActive markets: ${context?.activeMarkets ?? 0}\nTotal volume: ${context?.totalVolume ?? 0} ETH\nWallet connected: ${context?.isConnected ? 'Yes' : 'No'}\n\nYou can open /analytics for the live market dashboard or ask me for trending markets.`;
+  }
+
+  if (lastUserMsg.includes('portfolio') || lastUserMsg.includes('wallet')) {
+    return `📁 **Wallet summary**\n\nWallet connected: ${context?.isConnected ? 'Yes' : 'No'}\nAddress: ${context?.address ?? 'Not connected'}\nChain: ${context?.chainName ?? 'Unknown'}\nBalance: ${context?.ethBalance ?? '0'} ETH\n\nConnect your wallet on the assistant page to unlock portfolio actions.`;
+  }
+
+  if (lastUserMsg.includes('voice') || lastUserMsg.includes('speak')) {
+    return '🎙 Voice input is ready. Use the microphone button to dictate a command, then I will respond here and speak the reply aloud when supported by your browser.';
+  }
+
+  return 'AI is running in offline mode right now. You can still use trending markets, portfolio checks, sentiment summaries, and voice input from this assistant page.';
+}
+
 // Rate limit tracking (per-IP, simple in-memory)
 const ipRequestCounts = new Map<string, { count: number; windowStart: number }>();
 const RATE_LIMIT = { maxRequests: 30, windowMs: 60_000 };
@@ -133,9 +178,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const apiKey = process.env.REDPILL_API_KEY || process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'AI API key not configured' });
-  }
 
   const apiUrl = process.env.AI_API_URL || 'https://api.red-pill.ai/v1/chat/completions';
   const model = process.env.AI_MODEL || 'gpt-4o';
@@ -158,6 +200,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'messages array is required' });
     }
 
+    const lastUserMsg = messages.filter(m => m.role === 'user').slice(-1)[0]?.content?.toLowerCase() ?? '';
+
     // Build system prompt with wallet context + live trending markets
     const trendingMarkets = await fetchTrendingForContext();
     const systemPrompt = buildSystemPrompt({
@@ -178,7 +222,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // ── Keyword shortcut: bypass AI for trending markets query ──
     // If the user's last message is clearly asking for markets, serve live data immediately
-    const lastUserMsg = messages.filter(m => m.role === 'user').slice(-1)[0]?.content?.toLowerCase() ?? '';
     const TRENDING_KEYWORDS = ['show trending market', 'trending prediction', 'show me markets', 'list market', 'live market', 'what can i bet on', 'show active market', 'top market', 'popular market'];
     const isTrendingQuery = TRENDING_KEYWORDS.some(kw => lastUserMsg.includes(kw));
 
@@ -193,6 +236,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return msg;
       };
       return res.status(200).json({ type: 'message', message: formatTrendingMessage(trendingMarkets) } as AIResponse);
+    }
+
+    if (!apiKey) {
+      return res.status(200).json({
+        type: 'message',
+        message: buildOfflineReply(lastUserMsg, context, trendingMarkets),
+      } as AIResponse);
     }
 
     const apiMessages = [
@@ -244,27 +294,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (!data.choices?.[0]?.message) {
       console.error('AI API error:', JSON.stringify(data));
-      return res.status(502).json({
-        error: 'Invalid response from AI provider',
-        details: data.error?.message || JSON.stringify(data),
-      });
+      return res.status(200).json({
+        type: 'message',
+        message: buildOfflineReply(lastUserMsg, context, trendingMarkets),
+      } as AIResponse);
     }
 
     const aiMessage = data.choices[0].message;
-
-    // Helper: format trending markets into a readable message
-    const formatTrendingMessage = (trending: ReturnType<typeof formatTrending>): string => {
-      if (!trending.length) {
-        return '📊 No active prediction markets found right now. The Polymarket API may be temporarily unavailable.';
-      }
-      let msg = `🔥 **Trending Prediction Markets** — Live from Polymarket\n\n`;
-      trending.forEach((m, i) => {
-        msg += `**${i + 1}. ${m.question}**\n`;
-        msg += `   ✅ YES ${m.yesOdds} · 💰 $${m.volume} 24h vol · 🏷 ${m.category}\n\n`;
-      });
-      msg += `_Ask me about any of these, or say "bet YES on #3" to place a bet!_`;
-      return msg;
-    };
 
     // Server-side intercept: handle read-only functions without round-tripping to client
     const getToolName = (msg: typeof aiMessage): string | null => {
@@ -344,9 +380,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   } catch (error: any) {
     console.error('AI chat error:', error);
-    return res.status(500).json({
-      error: 'Failed to process AI request',
-      details: error?.message,
-    });
+    const body = req.body as {
+      messages?: AIRequestMessage[];
+      context?: {
+        isConnected?: boolean;
+        address?: string;
+        chainId?: number;
+        chainName?: string;
+        ethBalance?: string;
+        activeMarkets?: number;
+        totalVolume?: number;
+      };
+    };
+    const lastUserMsg = body.messages?.filter(m => m.role === 'user').slice(-1)[0]?.content?.toLowerCase() ?? '';
+    const trendingMarkets = await fetchTrendingForContext();
+    return res.status(200).json({
+      type: 'message',
+      message: buildOfflineReply(lastUserMsg, body.context, trendingMarkets),
+    } as AIResponse);
   }
 }

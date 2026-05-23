@@ -1,5 +1,7 @@
 import {
   Chain,
+  mainnet,
+  sepolia,
   base,
   arbitrumSepolia,
   baseSepolia,
@@ -47,18 +49,23 @@ export const chilizSpicyTestnet = {
   testnet: true,
 } as const satisfies Chain;
 
-const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || "placeholder_temp_id";
+const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || "YOUR_PROJECT_ID";
+
+const chains = [baseSepolia, base, mainnet, sepolia] as const;
+
+// Provide the wallet factory functions (not invoked) to connectorsForWallets.
+const recommendedWallets = [
+  injectedWallet,
+  metaMaskWallet,
+  coinbaseWallet,
+  walletConnectWallet,
+];
 
 const connectors = connectorsForWallets(
   [
     {
       groupName: "Recommended",
-      wallets: [
-        injectedWallet,
-        metaMaskWallet,
-        coinbaseWallet,
-        walletConnectWallet,
-      ],
+      wallets: recommendedWallets,
     },
   ],
   {
@@ -69,10 +76,12 @@ const connectors = connectorsForWallets(
 
 export const config = createConfig({
   connectors,
-  chains: [baseSepolia, base],   // Base Sepolia first — factory contract is deployed there
+  chains: chains as unknown as readonly [Chain, ...Chain[]],   // Base Sepolia first — factory contract is deployed there
   transports: {
     [baseSepolia.id]: http("https://base-sepolia-rpc.publicnode.com"),  // reliable free RPC
     [base.id]: http("https://base-rpc.publicnode.com"),
+    [mainnet.id]: http("https://ethereum.publicnode.com"),
+    [sepolia.id]: http("https://ethereum-sepolia.publicnode.com"),
   },
   storage: createStorage({ storage: cookieStorage }),
   ssr: true,

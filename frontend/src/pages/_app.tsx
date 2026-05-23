@@ -28,40 +28,38 @@ function MyApp({ Component, pageProps }: AppProps) {
   const isAuthPage = AUTH_ROUTES.has(router.pathname);
 
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={client}>
+    <QueryClientProvider client={client}>
+      <WagmiProvider config={config}>
         <RainbowKitProvider modalSize="compact">
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <GamificationProvider>
-              {isAuthPage ? (
-                // Auth pages: full-screen, no Navbar, no padding
-                <div className="min-h-screen" style={{ background: "var(--bg-base)" }}>
-                  <div className="fixed inset-0 bg-grid-pattern pointer-events-none z-0" style={{ opacity: 0.025 }} />
-                  <div className="relative z-10">
-                    <Component {...pageProps} />
-                  </div>
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <GamificationProvider>
+            {isAuthPage ? (
+              <div className="min-h-screen" style={{ background: "var(--bg-base)" }}>
+                <div className="fixed inset-0 bg-grid-pattern pointer-events-none z-0" style={{ opacity: 0.025 }} />
+                <div className="relative z-10">
+                  <Component {...pageProps} />
                 </div>
-              ) : (
-                // App pages: full layout with Navbar, padding, footer
-                <div className="min-h-screen flex flex-col" style={{ background: "var(--bg-base)" }}>
-                  <div className="fixed inset-0 bg-grid-pattern pointer-events-none z-0" style={{ opacity: 0.025 }} />
-                  <GamificationToasts />
-                  <div className="relative z-10 flex flex-col min-h-screen">
-                    <Navbar />
-                    <main className="flex-1">
-                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                        <Component {...pageProps} />
-                      </div>
-                    </main>
-                    <Footer />
-                  </div>
+              </div>
+            ) : (
+              <div className="min-h-screen flex flex-col" style={{ background: "var(--bg-base)" }}>
+                <div className="fixed inset-0 bg-grid-pattern pointer-events-none z-0" style={{ opacity: 0.025 }} />
+                <GamificationToasts />
+                <div className="relative z-10 flex flex-col min-h-screen">
+                  <Navbar />
+                  <main className="flex-1">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <Component {...pageProps} />
+                    </div>
+                  </main>
+                  <Footer />
                 </div>
-              )}
-            </GamificationProvider>
-          </LocalizationProvider>
+              </div>
+            )}
+          </GamificationProvider>
+        </LocalizationProvider>
         </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+      </WagmiProvider>
+    </QueryClientProvider>
   );
 }
 
