@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAccount } from 'wagmi';
 import Link from 'next/link';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { StatCard, LiveIndicator, EmptyState, Badge } from '../components/ui/primitives';
 import { StockQuoteCard, HeatmapCell, SentimentVsPrice } from '../components/ui/stockWidgets';
 import { useMultiQuote, useStockHistory } from '../hooks/useStockData';
@@ -54,6 +55,23 @@ export default function Dashboard() {
         <EmptyState
           title="Connect Your Wallet"
           description="Connect your wallet to view your dashboard, track positions, and manage markets."
+          action={
+            <ConnectButton.Custom>
+              {({ mounted, openConnectModal }) => {
+                if (!mounted) return null;
+
+                return (
+                  <button
+                    onClick={openConnectModal}
+                    className="btn-primary inline-flex items-center gap-2 px-5 py-3"
+                  >
+                    <LuWallet className="w-4 h-4" />
+                    Connect Wallet
+                  </button>
+                );
+              }}
+            </ConnectButton.Custom>
+          }
         />
       </div>
     );

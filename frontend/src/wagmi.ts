@@ -49,17 +49,27 @@ export const chilizSpicyTestnet = {
   testnet: true,
 } as const satisfies Chain;
 
-const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || "YOUR_PROJECT_ID";
+const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID?.trim();
+export const hasWalletConnectProjectId =
+  !!walletConnectProjectId &&
+  walletConnectProjectId !== "YOUR_PROJECT_ID" &&
+  walletConnectProjectId !== "your-walletconnect-project-id";
 
 const chains = [baseSepolia, base, mainnet, sepolia] as const;
 
 // Provide the wallet factory functions (not invoked) to connectorsForWallets.
-const recommendedWallets = [
-  injectedWallet,
-  metaMaskWallet,
-  coinbaseWallet,
-  walletConnectWallet,
-];
+const recommendedWallets = hasWalletConnectProjectId
+  ? [
+      injectedWallet,
+      metaMaskWallet,
+      coinbaseWallet,
+      walletConnectWallet,
+    ]
+  : [
+      injectedWallet,
+      metaMaskWallet,
+      coinbaseWallet,
+    ];
 
 const connectors = connectorsForWallets(
   [
@@ -70,7 +80,7 @@ const connectors = connectorsForWallets(
   ],
   {
     appName: "PumpX",
-    projectId,
+    projectId: walletConnectProjectId ?? "",
   }
 );
 

@@ -7,6 +7,7 @@ import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useRouter } from 'next/router';
 import { useAuth } from '../hooks/useAuth';
+import { hasWalletConnectProjectId } from '../wagmi';
 import { LuShield, LuZap, LuLock, LuTrendingUp } from 'react-icons/lu';
 
 const FEATURES = [
@@ -131,6 +132,14 @@ export default function LoginPage() {
                     <p className="text-sm text-[var(--text-secondary)] mb-8">
                         Connect your wallet and sign a message to authenticate. No email or password needed.
                     </p>
+
+                    {!hasWalletConnectProjectId && (
+                        <div className="mb-6 rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+                            WalletConnect scan and browser-deeplink mode are disabled until you set a real
+                            <span className="font-mono"> NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID </span>
+                            in <span className="font-mono">frontend/.env.local</span>. MetaMask and other injected wallets still work.
+                        </div>
+                    )}
 
                     {/* Step indicator */}
                     <div className="flex items-center gap-3 mb-8">
