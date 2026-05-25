@@ -22,47 +22,65 @@ const createProfileSchema = z.object({
         .min(3, 'Minimum 3 characters')
         .max(30, 'Maximum 30 characters')
         .regex(/^[a-zA-Z0-9_]+$/, 'Only letters, numbers and underscores'),
-    avatarUrl: z.string().url().optional().nullable(),
+    avatarUrl: z.preprocess(
+        (value) => (value === '' ? null : value),
+        z.string().min(1).max(32).optional().nullable(),
+    ),
     bio: z.string().max(200).optional().nullable(),
 });
 
 async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
     const address = req.user!.address;
 
-    if (req.method === 'GET') {
-        const profile = await prisma.userProfile.findUnique({
+    try {
+        if (req.method === 'GET') {
+            const profile = await prisma.userProfile.findUnique({
+                where: { address },
+            });
+            return res.status(200).json({ profile });
+        }
+
+        // POST — create or update
+        const parsed = createProfileSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: parsed.error.flatten().fieldErrors,
+            });
+        }
+
+        const { username, avatarUrl, bio } = parsed.data;
+
+        // Check username uniqueness (allow own name)
+        const existing = await prisma.userProfile.findUnique({
+            where: { username },
+        });
+        if (existing && existing.address !== address) {
+            return res.status(409).json({ error: 'Username already taken' });
+        }
+
+        const profile = await prisma.userProfile.upsert({
             where: { address },
+            update: { username, avatarUrl: avatarUrl ?? null, bio: bio ?? null },
+            create: { address, username, avatarUrl: avatarUrl ?? null, bio: bio ?? null },
         });
+
+        log.info({ address, username }, 'Profile updated');
         return res.status(200).json({ profile });
-    }
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown database error';
+        log.error({ err: error, address }, 'Profile save failed');
 
-    // POST — create or update
-    const parsed = createProfileSchema.safeParse(req.body);
-    if (!parsed.success) {
-        return res.status(400).json({
-            error: 'Validation failed',
-            details: parsed.error.flatten().fieldErrors,
+        if (message.includes("Can't reach database server") || message.includes('P1001') || message.includes('P1002') || message.includes('P1017')) {
+            return res.status(503).json({
+                error: 'Database is not reachable yet. Check your Supabase password in DATABASE_URL and DIRECT_DATABASE_URL, then try again.',
+            });
+        }
+
+        return res.status(500).json({
+            error: 'Failed to save profile. Please try again.',
         });
     }
-
-    const { username, avatarUrl, bio } = parsed.data;
-
-    // Check username uniqueness (allow own name)
-    const existing = await prisma.userProfile.findUnique({
-        where: { username },
-    });
-    if (existing && existing.address !== address) {
-        return res.status(409).json({ error: 'Username already taken' });
-    }
-
-    const profile = await prisma.userProfile.upsert({
-        where: { address },
-        update: { username, avatarUrl: avatarUrl ?? null, bio: bio ?? null },
-        create: { address, username, avatarUrl: avatarUrl ?? null, bio: bio ?? null },
-    });
-
-    log.info({ address, username }, 'Profile updated');
-    return res.status(200).json({ profile });
 }
 
 export default compose(

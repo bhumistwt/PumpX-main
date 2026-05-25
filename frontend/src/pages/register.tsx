@@ -66,6 +66,8 @@ export default function RegisterPage() {
             if (!res.ok) {
                 if (res.status === 409) {
                     setServerError('That username is taken. Try another.');
+                } else if (res.status === 503) {
+                    setServerError(data.error ?? 'Database is unavailable. Fix your Supabase connection string or click Skip for now.');
                 } else {
                     setServerError(data.error ?? 'Failed to save profile. Please try again.');
                 }
