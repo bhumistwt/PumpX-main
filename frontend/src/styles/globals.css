@@ -481,7 +481,7 @@
   .navbar-shell {
     position: sticky;
     top: 0;
-    overflow: hidden;
+    overflow: visible;
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border-bottom: 1px solid var(--glass-border);
