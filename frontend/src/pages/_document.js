@@ -13,7 +13,7 @@ export default function Document() {
         <meta name="description" content="PumpX — Decentralized prediction markets powered by on-chain token supply data" />
         <meta name="theme-color" content="#0a0e17" />
       </Head>
-      <body className="bg-nexus-bg text-white antialiased">
+      <body className="antialiased">
         <Main />
         <NextScript />
       </body>

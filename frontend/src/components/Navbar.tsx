@@ -133,13 +133,22 @@ export default function Navbar() {
     setNavbarTheme(prefersLight ? 'light' : 'dark');
   }, []);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.theme = navbarTheme;
+    root.style.colorScheme = navbarTheme;
+
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    themeMeta?.setAttribute('content', navbarTheme === 'light' ? '#f4f7fb' : '#0a0e17');
+  }, [navbarTheme]);
+
   return (
     <nav
       className={`navbar-shell sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'shadow-lg' : ''}`}
       data-theme={navbarTheme}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 py-3 min-h-16">
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group shrink-0">
@@ -153,26 +162,24 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop nav */}
-          {isConnected && (
-            <div className="hidden md:flex items-center gap-1">
-              {NAV_GROUPS.map((group) => (
-                <NavDropdown
-                  key={group.label}
-                  label={group.label}
-                  items={group.items}
-                  currentPath={router.pathname}
-                />
-              ))}
-              {/* Admin-only link */}
-              {user?.role === 'ADMIN' && (
-                <NavDropdown
-                  label="Admin"
-                  items={ADMIN_ITEMS}
-                  currentPath={router.pathname}
-                />
-              )}
-            </div>
-          )}
+          <div className="order-3 md:order-none basis-full md:basis-auto flex flex-wrap items-center justify-center md:justify-start gap-1">
+            {NAV_GROUPS.map((group) => (
+              <NavDropdown
+                key={group.label}
+                label={group.label}
+                items={group.items}
+                currentPath={router.pathname}
+              />
+            ))}
+            {/* Admin-only link */}
+            {user?.role === 'ADMIN' && (
+              <NavDropdown
+                label="Admin"
+                items={ADMIN_ITEMS}
+                currentPath={router.pathname}
+              />
+            )}
+          </div>
 
           {/* Right section */}
           <div className="flex items-center gap-2.5 shrink-0">
