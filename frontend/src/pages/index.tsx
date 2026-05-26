@@ -91,7 +91,7 @@ const Home: NextPage = () => {
               Decentralized Financial Platform
             </h1>
 
-            <p className="text-lg sm:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+            <p className="text-lg sm:text-xl text-[var(--text-primary)] max-w-2xl mx-auto lg:mx-0 leading-relaxed">
               Create permissionless prediction markets on any token. Stake positions with ETH.
               Earn from accurate market forecasts. Fully on-chain, fully transparent.
             </p>
