@@ -215,7 +215,7 @@
     transform: translate3d(-50%, -50%, 90px);
     background:
       radial-gradient(circle at 28% 30%, rgba(255,255,255,0.58) 0%, rgba(255,255,255,0.1) 24%, rgba(4,6,15,0.4) 42%),
-      conic-gradient(from 0deg, rgba(0,212,170,0.45), rgba(99,102,241,0.55), rgba(0,212,170,0.45));
+      conic-gradient(from 0deg, rgba(0,255,102,0.45), rgba(99,102,241,0.55), rgba(0,255,102,0.45));
     box-shadow:
       0 0 40px rgba(0, 255, 102, 0.25),
       0 0 72px rgba(99, 102, 241, 0.2),

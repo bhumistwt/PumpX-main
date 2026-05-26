@@ -357,7 +357,7 @@ export default function MarketsCreate() {
 
       {/* Current chain indicator */}
       {chain && currentFactory && (
-        <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg text-xs" style={{ background: 'rgba(0,212,170,0.08)', border: '1px solid rgba(0,212,170,0.2)' }}>
+        <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg text-xs" style={{ background: 'rgba(0,255,102,0.08)', border: '1px solid rgba(0,255,102,0.2)' }}>
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span className="text-[var(--text-secondary)]">
             Connected to <strong className="text-[var(--accent-primary)]">{chain.name}</strong>

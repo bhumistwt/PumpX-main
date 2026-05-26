@@ -90,7 +90,7 @@ export default function LoginPage() {
                         {FEATURES.map(({ icon: Icon, text }) => (
                             <div key={text} className="flex items-center gap-3">
                                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                                    style={{ background: 'rgba(0,212,170,0.1)', border: '1px solid rgba(0,212,170,0.2)' }}>
+                                    style={{ background: 'rgba(0,255,102,0.1)', border: '1px solid rgba(0,255,102,0.2)' }}>
                                     <Icon className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} />
                                 </div>
                                 <span className="text-sm text-[var(--text-secondary)]">{text}</span>
