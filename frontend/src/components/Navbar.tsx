@@ -156,7 +156,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group shrink-0">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #00d4aa, #6366f1)' }}>
+              style={{ background: 'linear-gradient(135deg, #00ff66, #6366f1)' }}>
               <span className="text-sm font-black" style={{ color: '#04060f' }}>P</span>
             </div>
             <span className="text-base font-bold text-[var(--text-primary)] hidden sm:block">

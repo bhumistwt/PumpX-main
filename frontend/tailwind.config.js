@@ -22,7 +22,7 @@ module.exports = {
           bg: '#0a0e17',
           card: '#141c2b',
           elevated: '#1e293b',
-          accent: '#00d4aa',
+          accent: '#00ff66',
           blue: '#3b82f6',
           muted: '#64748b',
         },

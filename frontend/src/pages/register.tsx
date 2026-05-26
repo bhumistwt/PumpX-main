@@ -102,7 +102,7 @@ export default function RegisterPage() {
                 <div className="absolute top-[-20%] left-[10%] w-[500px] h-[500px] rounded-full opacity-15 blur-[100px]"
                     style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)' }} />
                 <div className="absolute bottom-[-10%] right-[5%] w-[400px] h-[400px] rounded-full opacity-12 blur-[100px]"
-                    style={{ background: 'radial-gradient(circle, #00d4aa, transparent 70%)' }} />
+                    style={{ background: 'radial-gradient(circle, #00ff66, transparent 70%)' }} />
             </div>
 
             <div className="w-full max-w-md relative z-10 animate-scale-in">
@@ -110,7 +110,7 @@ export default function RegisterPage() {
                     {/* Header */}
                     <div className="text-center mb-8">
                         <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center text-3xl"
-                            style={{ background: 'linear-gradient(135deg, rgba(0,212,170,0.2), rgba(99,102,241,0.2))', border: '1px solid var(--glass-border)' }}>
+                            style={{ background: 'linear-gradient(135deg, rgba(0,255,102,0.2), rgba(99,102,241,0.2))', border: '1px solid var(--glass-border)' }}>
                             {selectedAvatar ?? '👤'}
                         </div>
                         <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-1">Almost there!</h1>
@@ -168,7 +168,7 @@ export default function RegisterPage() {
                                             }`}
                                         style={{
                                             background: selectedAvatar === emoji
-                                                ? 'rgba(0,212,170,0.15)'
+                                                ? 'rgba(0,255,102,0.15)'
                                                 : 'rgba(255,255,255,0.04)',
                                             border: '1px solid var(--glass-border)',
                                         }}

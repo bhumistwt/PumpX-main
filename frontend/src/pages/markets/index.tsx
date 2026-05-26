@@ -346,7 +346,7 @@ export default function MarketsCreate() {
                 key={c.id}
                 onClick={() => switchChain({ chainId: c.id })}
                 className="flex-1 py-2 px-3 rounded-lg text-xs font-semibold text-white transition-all hover:opacity-90"
-                style={{ background: c.id === 84532 ? 'linear-gradient(135deg, #6366f1, #818cf8)' : 'linear-gradient(135deg, #0052ff, #00d4aa)' }}
+                style={{ background: c.id === 84532 ? 'linear-gradient(135deg, #6366f1, #818cf8)' : 'linear-gradient(135deg, #0052ff, #00ff66)' }}
               >
                 🔄 {c.name} ({c.label})
               </button>
