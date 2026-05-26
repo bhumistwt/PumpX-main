@@ -8,7 +8,7 @@ const Footer = ({ className }: { className?: string }) => (
         {/* Brand */}
         <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 rounded-md bg-gradient-to-br from-[#00ff66] to-[#3b82f6] flex items-center justify-center">
+            <div className="w-7 h-7 rounded-md bg-gradient-to-br from-[#70e000] to-[#3b82f6] flex items-center justify-center">
               <span className="text-xs font-bold text-[#0a0e17]">P</span>
             </div>
             <span className="font-bold text-[var(--text-primary)]">PumpX</span>

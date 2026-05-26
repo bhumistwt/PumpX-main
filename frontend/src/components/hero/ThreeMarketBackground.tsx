@@ -40,7 +40,7 @@ const ThreeMarketBackground: React.FC<ThreeMarketBackgroundProps> = ({ scrollDep
     mountEl.appendChild(renderer.domElement);
 
     const ambient = new THREE.AmbientLight(0x6b7cff, 0.55);
-    const key = new THREE.PointLight(0x00ff66, 1.2, 60);
+    const key = new THREE.PointLight(0x70e000, 1.2, 60);
     key.position.set(3.5, 3, 6);
     const fill = new THREE.PointLight(0x4f69ff, 0.95, 60);
     fill.position.set(-4, -2, 5);

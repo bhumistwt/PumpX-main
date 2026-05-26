@@ -346,7 +346,7 @@ export default function MarketsCreate() {
                 key={c.id}
                 onClick={() => switchChain({ chainId: c.id })}
                 className="flex-1 py-2 px-3 rounded-lg text-xs font-semibold text-white transition-all hover:opacity-90"
-                style={{ background: c.id === 84532 ? 'linear-gradient(135deg, #6366f1, #818cf8)' : 'linear-gradient(135deg, #0052ff, #00ff66)' }}
+                style={{ background: c.id === 84532 ? 'linear-gradient(135deg, #6366f1, #818cf8)' : 'linear-gradient(135deg, #0052ff, #70e000)' }}
               >
                 🔄 {c.name} ({c.label})
               </button>
@@ -357,7 +357,7 @@ export default function MarketsCreate() {
 
       {/* Current chain indicator */}
       {chain && currentFactory && (
-        <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg text-xs" style={{ background: 'rgba(0,255,102,0.08)', border: '1px solid rgba(0,255,102,0.2)' }}>
+        <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg text-xs" style={{ background: 'rgba(112,224,0,0.08)', border: '1px solid rgba(112,224,0,0.2)' }}>
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span className="text-[var(--text-secondary)]">
             Connected to <strong className="text-[var(--accent-primary)]">{chain.name}</strong>

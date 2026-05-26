@@ -87,7 +87,7 @@ const Home: NextPage = () => {
               <LiveIndicator label="Live on Base" />
             </div>
 
-            <h1 className="goldman-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
+            <h1 className="tech-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold uppercase tracking-tight leading-tight">
               Decentralized Financial Platform
             </h1>
 

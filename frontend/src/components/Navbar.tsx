@@ -6,6 +6,7 @@ import {
   LuAlignJustify, LuX, LuTrendingUp, LuPlusCircle, LuLayoutDashboard,
   LuTrophy, LuBot, LuGamepad2, LuFlame, LuShield, LuGitBranch, LuGlobe,
   LuGauge, LuGlobe2, LuBarChart2, LuChevronDown, LuLogIn, LuLogOut, LuUser,
+  LuMoon, LuSun,
 } from 'react-icons/lu';
 import { XPBar } from './gamification/XPBar';
 import { StreakCounter } from './gamification/StreakCounter';
@@ -81,10 +82,7 @@ function NavDropdown({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${isActive
-          ? 'bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]'
-          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-glass)]'
-          }`}
+        className={`navbar-dropdown-trigger flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${isActive ? 'is-active' : ''}`}
       >
         {label}
         <LuChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -92,13 +90,7 @@ function NavDropdown({
 
       {open && (
         <div
-          className="absolute top-full left-0 mt-2 w-52 rounded-2xl p-1.5 z-50 animate-scale-in"
-          style={{
-            background: 'rgba(8,13,26,0.92)',
-            backdropFilter: 'blur(24px)',
-            border: '1px solid var(--glass-border)',
-            boxShadow: '0 24px 48px rgba(0,0,0,0.4)',
-          }}
+          className="navbar-dropdown-panel absolute top-full left-0 mt-2 w-52 rounded-2xl p-1.5 z-50 animate-scale-in"
         >
           {items.map(({ href, label: itemLabel, icon: Icon }) => {
             const active = currentPath === href || currentPath.startsWith(href + '/');
@@ -107,10 +99,7 @@ function NavDropdown({
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${active
-                  ? 'bg-[var(--accent-primary)]/12 text-[var(--accent-primary)]'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/5'
-                  }`}
+                className={`navbar-dropdown-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${active ? 'is-active' : ''}`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
                 {itemLabel}
@@ -128,6 +117,7 @@ function NavDropdown({
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [navbarTheme, setNavbarTheme] = useState<'dark' | 'light'>('dark');
   const router = useRouter();
   const { isConnected } = useAccount();
   const { user, signOut } = useAuth();
@@ -138,17 +128,15 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  useEffect(() => {
+    const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+    setNavbarTheme(prefersLight ? 'light' : 'dark');
+  }, []);
+
   return (
     <nav
-      className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'shadow-lg shadow-black/20' : ''
-        }`}
-      style={{
-        background: scrolled
-          ? 'rgba(4,6,15,0.88)'
-          : 'rgba(4,6,15,0.60)',
-        backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid var(--glass-border)',
-      }}
+      className={`navbar-shell sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'shadow-lg' : ''}`}
+      data-theme={navbarTheme}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-3">
@@ -156,10 +144,10 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group shrink-0">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #00ff66, #6366f1)' }}>
+              style={{ background: 'linear-gradient(135deg, #70e000, #6366f1)' }}>
               <span className="text-sm font-black" style={{ color: '#04060f' }}>P</span>
             </div>
-            <span className="text-base font-bold text-[var(--text-primary)] hidden sm:block">
+            <span className="navbar-brand-text text-base font-bold hidden sm:block">
               Pump<span style={{ color: 'var(--accent-primary)' }}>X</span>
             </span>
           </Link>
@@ -188,6 +176,17 @@ export default function Navbar() {
 
           {/* Right section */}
           <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setNavbarTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+              className="navbar-theme-toggle flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
+              aria-label="Toggle navbar theme"
+              title={navbarTheme === 'dark' ? 'Switch to light navbar' : 'Switch to dark navbar'}
+            >
+              {navbarTheme === 'dark' ? <LuSun className="w-4 h-4" /> : <LuMoon className="w-4 h-4" />}
+              <span className="hidden sm:inline">{navbarTheme === 'dark' ? 'Light' : 'Dark'}</span>
+            </button>
+
             {/* Gamification indicators */}
             {isConnected && (
               <div className="hidden lg:flex items-center gap-2">
@@ -205,20 +204,20 @@ export default function Navbar() {
                   accountStatus={{ smallScreen: 'avatar', largeScreen: 'avatar' }}
                 />
                 {user?.username && (
-                  <span className="hidden md:block text-xs font-medium text-[var(--text-secondary)]">
+                  <span className="navbar-muted hidden md:block text-xs font-medium">
                     @{user.username}
                   </span>
                 )}
                 <button
                   onClick={signOut}
-                  className="btn-ghost p-2 rounded-xl"
+                  className="btn-ghost navbar-action p-2 rounded-xl"
                   title="Sign out"
                 >
                   <LuLogOut className="w-4 h-4" />
                 </button>
               </>
             ) : (
-              <Link href="/login" className="btn-secondary flex items-center gap-2 py-2 px-4">
+              <Link href="/login" className="btn-secondary navbar-action flex items-center gap-2 py-2 px-4">
                 <LuLogIn className="w-4 h-4" />
                 <span className="hidden sm:block text-sm">Sign In</span>
               </Link>
@@ -227,7 +226,7 @@ export default function Navbar() {
             {/* Mobile burger */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 rounded-xl text-[var(--text-secondary)] hover:bg-white/5 transition-colors"
+              className="navbar-action md:hidden p-2 rounded-xl transition-colors"
             >
               {isMenuOpen ? <LuX className="w-5 h-5" /> : <LuAlignJustify className="w-5 h-5" />}
             </button>
@@ -238,12 +237,7 @@ export default function Navbar() {
       {/* Mobile menu */}
       {isMenuOpen && (
         <div
-          className="md:hidden border-t animate-slide-up overflow-y-auto max-h-[80vh]"
-          style={{
-            background: 'rgba(4,6,15,0.97)',
-            backdropFilter: 'blur(24px)',
-            borderColor: 'var(--glass-border)',
-          }}
+          className="navbar-mobile-panel md:hidden border-t animate-slide-up overflow-y-auto max-h-[80vh]"
         >
           <div className="px-4 py-4 space-y-1">
             {NAV_GROUPS.map((group) => (
@@ -258,10 +252,7 @@ export default function Navbar() {
                       key={href}
                       href={href}
                       onClick={() => setIsMenuOpen(false)}
-                      className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${active
-                        ? 'bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]'
-                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/4'
-                        }`}
+                      className={`navbar-mobile-link flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${active ? 'is-active' : ''}`}
                     >
                       <Icon className="w-4 h-4" />
                       {label}
@@ -275,7 +266,7 @@ export default function Navbar() {
             {isConnected && (
               <button
                 onClick={() => { signOut(); setIsMenuOpen(false); }}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-red-400 hover:bg-red-400/5 transition-colors mt-2"
+                className="navbar-mobile-link w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-red-400 transition-colors mt-2"
               >
                 <LuLogOut className="w-4 h-4" />
                 Sign Out

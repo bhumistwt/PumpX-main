@@ -48,7 +48,7 @@ export default function LoginPage() {
                 />
                 <div
                     className="absolute bottom-[-15%] left-[-10%] w-[600px] h-[600px] rounded-full opacity-15 blur-[120px]"
-                    style={{ background: 'radial-gradient(circle, #00ff66, transparent 70%)' }}
+                    style={{ background: 'radial-gradient(circle, #70e000, transparent 70%)' }}
                 />
                 <div
                     className="absolute inset-0 opacity-[0.025]"
@@ -66,7 +66,7 @@ export default function LoginPage() {
                     {/* Logo */}
                         <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                            style={{ background: 'linear-gradient(135deg, #00ff66, #6366f1)' }}>
+                            style={{ background: 'linear-gradient(135deg, #70e000, #6366f1)' }}>
                             <span className="text-xl font-black" style={{ color: '#04060f' }}>P</span>
                         </div>
                         <span className="text-2xl font-bold text-[var(--text-primary)]">
@@ -90,7 +90,7 @@ export default function LoginPage() {
                         {FEATURES.map(({ icon: Icon, text }) => (
                             <div key={text} className="flex items-center gap-3">
                                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                                    style={{ background: 'rgba(0,255,102,0.1)', border: '1px solid rgba(0,255,102,0.2)' }}>
+                                    style={{ background: 'rgba(112,224,0,0.1)', border: '1px solid rgba(112,224,0,0.2)' }}>
                                     <Icon className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} />
                                 </div>
                                 <span className="text-sm text-[var(--text-secondary)]">{text}</span>
@@ -118,7 +118,7 @@ export default function LoginPage() {
                     {/* Mobile logo */}
                     <div className="lg:hidden flex items-center gap-3 mb-8">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                            style={{ background: 'linear-gradient(135deg, #00ff66, #6366f1)' }}>
+                            style={{ background: 'linear-gradient(135deg, #70e000, #6366f1)' }}>
                             <span className="text-lg font-black" style={{ color: '#04060f' }}>P</span>
                         </div>
                         <span className="text-xl font-bold text-[var(--text-primary)]">
