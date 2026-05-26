@@ -79,15 +79,15 @@ const connectors = connectorsForWallets(
   ],
   {
     appName: "PumpX",
-    projectId: walletConnectProjectId ?? "",
+    projectId: walletConnectProjectId || "962deabecd0a601e01642901a1df9c3c",
   }
 );
 
 export const config = createConfig({
   connectors,
-  chains: chains as unknown as readonly [Chain, ...Chain[]],   // Base Sepolia first — factory contract is deployed there
+  chains: chains as unknown as readonly [Chain, ...Chain[]],
   transports: {
-    [baseSepolia.id]: http("https://base-sepolia-rpc.publicnode.com"),  // reliable free RPC
+    [baseSepolia.id]: http("https://base-sepolia-rpc.publicnode.com"),
     [base.id]: http("https://base-rpc.publicnode.com"),
     [mainnet.id]: http("https://ethereum.publicnode.com"),
     [sepolia.id]: http("https://ethereum-sepolia.publicnode.com"),

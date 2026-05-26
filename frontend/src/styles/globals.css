@@ -89,6 +89,222 @@
 /* ── Components ───────────────────────────────────────────── */
 @layer components {
 
+  /* ─ Landing Hero 3D Scene ─ */
+  .hero-noise {
+    @apply absolute inset-0 pointer-events-none;
+    background-image:
+      radial-gradient(circle at 22% 24%, rgba(99, 102, 241, 0.15), transparent 36%),
+      radial-gradient(circle at 85% 68%, rgba(0, 212, 170, 0.13), transparent 34%);
+  }
+
+  .hero-3d-wrap {
+    perspective: 1200px;
+    transform-style: preserve-3d;
+  }
+
+  .hero-3d-scene {
+    @apply relative w-full h-full;
+    transform-style: preserve-3d;
+    transition: transform 220ms ease-out;
+  }
+
+  .hero-3d-glow {
+    @apply absolute rounded-full;
+    filter: blur(10px);
+    transform: translateZ(-80px);
+  }
+
+  .hero-3d-glow-a {
+    width: 260px;
+    height: 260px;
+    top: 10%;
+    left: 20%;
+    background: radial-gradient(circle, rgba(0, 212, 170, 0.32) 0%, rgba(0, 212, 170, 0) 72%);
+    animation: hero-drift-a 9s ease-in-out infinite;
+  }
+
+  .hero-3d-glow-b {
+    width: 240px;
+    height: 240px;
+    right: 8%;
+    bottom: 12%;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.32) 0%, rgba(99, 102, 241, 0) 72%);
+    animation: hero-drift-b 11s ease-in-out infinite;
+  }
+
+  .hero-core-sphere {
+    @apply absolute rounded-full;
+    width: 170px;
+    height: 170px;
+    left: 50%;
+    top: 50%;
+    transform: translate3d(-50%, -50%, 90px);
+    background:
+      radial-gradient(circle at 28% 30%, rgba(255,255,255,0.58) 0%, rgba(255,255,255,0.1) 24%, rgba(4,6,15,0.4) 42%),
+      conic-gradient(from 0deg, rgba(0,212,170,0.45), rgba(99,102,241,0.55), rgba(0,212,170,0.45));
+    box-shadow:
+      0 0 40px rgba(0, 212, 170, 0.25),
+      0 0 72px rgba(99, 102, 241, 0.2),
+      inset 0 0 26px rgba(0, 0, 0, 0.25);
+    animation: hero-pulse 6s ease-in-out infinite;
+  }
+
+  .hero-orbital-ring {
+    @apply absolute rounded-full border;
+    left: 50%;
+    top: 50%;
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: inset 0 0 24px rgba(255, 255, 255, 0.05);
+  }
+
+  .hero-orbital-ring-1 {
+    width: 320px;
+    height: 180px;
+    transform: translate3d(-50%, -50%, 38px) rotateX(64deg) rotateZ(0deg);
+    animation: hero-spin-1 12s linear infinite;
+  }
+
+  .hero-orbital-ring-2 {
+    width: 280px;
+    height: 160px;
+    transform: translate3d(-50%, -50%, 25px) rotateX(72deg) rotateY(20deg) rotateZ(0deg);
+    border-color: rgba(0, 212, 170, 0.35);
+    animation: hero-spin-2 8s linear infinite reverse;
+  }
+
+  .hero-float-card {
+    @apply absolute rounded-xl px-4 py-3;
+    min-width: 148px;
+    background: rgba(8, 13, 26, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.35);
+    transform-style: preserve-3d;
+  }
+
+  .hero-float-card strong {
+    @apply block text-xl font-bold mt-1;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    color: var(--text-primary);
+  }
+
+  .hero-float-label {
+    @apply text-xs uppercase tracking-wider;
+    color: var(--text-muted);
+  }
+
+  .hero-float-card-a {
+    left: 2%;
+    top: 20%;
+    transform: translate3d(0, 0, 120px);
+    animation: hero-card-float-a 7s ease-in-out infinite;
+  }
+
+  .hero-float-card-b {
+    right: 0;
+    top: 40%;
+    transform: translate3d(0, 0, 135px);
+    animation: hero-card-float-b 8s ease-in-out infinite;
+  }
+
+  .hero-float-card-c {
+    left: 20%;
+    bottom: 2%;
+    transform: translate3d(0, 0, 95px);
+    animation: hero-card-float-c 9s ease-in-out infinite;
+  }
+
+  @keyframes hero-spin-1 {
+    from { transform: translate3d(-50%, -50%, 38px) rotateX(64deg) rotateZ(0deg); }
+    to { transform: translate3d(-50%, -50%, 38px) rotateX(64deg) rotateZ(360deg); }
+  }
+
+  @keyframes hero-spin-2 {
+    from { transform: translate3d(-50%, -50%, 25px) rotateX(72deg) rotateY(20deg) rotateZ(0deg); }
+    to { transform: translate3d(-50%, -50%, 25px) rotateX(72deg) rotateY(20deg) rotateZ(360deg); }
+  }
+
+  @keyframes hero-pulse {
+    0%, 100% { transform: translate3d(-50%, -50%, 90px) scale(1); }
+    50% { transform: translate3d(-50%, -50%, 90px) scale(1.05); }
+  }
+
+  @keyframes hero-card-float-a {
+    0%, 100% { transform: translate3d(0, 0, 120px) rotateY(-6deg); }
+    50% { transform: translate3d(-6px, -9px, 138px) rotateY(-2deg); }
+  }
+
+  @keyframes hero-card-float-b {
+    0%, 100% { transform: translate3d(0, 0, 135px) rotateY(8deg); }
+    50% { transform: translate3d(6px, -10px, 152px) rotateY(3deg); }
+  }
+
+  @keyframes hero-card-float-c {
+    0%, 100% { transform: translate3d(0, 0, 95px) rotateX(3deg); }
+    50% { transform: translate3d(2px, -8px, 112px) rotateX(8deg); }
+  }
+
+  @keyframes hero-drift-a {
+    0%, 100% { transform: translate3d(0, 0, -80px); }
+    50% { transform: translate3d(8px, -10px, -50px); }
+  }
+
+  @keyframes hero-drift-b {
+    0%, 100% { transform: translate3d(0, 0, -80px); }
+    50% { transform: translate3d(-10px, 8px, -40px); }
+  }
+
+  @media (max-width: 1024px) {
+    .hero-3d-wrap {
+      max-width: 460px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .hero-core-sphere {
+      width: 140px;
+      height: 140px;
+    }
+
+    .hero-orbital-ring-1 {
+      width: 250px;
+      height: 140px;
+    }
+
+    .hero-orbital-ring-2 {
+      width: 220px;
+      height: 124px;
+    }
+
+    .hero-float-card {
+      min-width: 124px;
+      padding: 0.65rem 0.75rem;
+    }
+
+    .hero-float-card strong {
+      font-size: 1rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-3d-scene,
+    .hero-3d-glow-a,
+    .hero-3d-glow-b,
+    .hero-core-sphere,
+    .hero-orbital-ring-1,
+    .hero-orbital-ring-2,
+    .hero-float-card-a,
+    .hero-float-card-b,
+    .hero-float-card-c {
+      animation: none !important;
+      transition: none !important;
+      transform: none !important;
+    }
+  }
+
   /* ─ Glass Cards ─ */
   .glass-card {
     @apply relative rounded-2xl transition-all duration-300;

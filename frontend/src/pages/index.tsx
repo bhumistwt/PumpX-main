@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { LiveIndicator } from "../components/ui/primitives";
 import { LuArrowRight, LuShield, LuZap, LuGlobe, LuBarChart3, LuTrendingUp, LuLock } from "react-icons/lu";
+import ThreeMarketBackground from "../components/hero/ThreeMarketBackground";
+import MarketDataRibbon from "../components/hero/MarketDataRibbon";
 
 // Animated counter hook
 function useCountUp(target: number, duration = 2000) {
@@ -31,6 +33,8 @@ const FEATURES = [
 
 const Home: NextPage = () => {
   const [stats, setStats] = React.useState({ activeMarkets: 0, totalEthVolume: 0, totalUsers: 0 });
+  const [tilt, setTilt] = React.useState({ x: 0, y: 0 });
+  const [scrollDepth, setScrollDepth] = React.useState(0);
 
   React.useEffect(() => {
     fetch('/api/stats')
@@ -43,41 +47,100 @@ const Home: NextPage = () => {
       .catch(() => { });
   }, []);
 
+  React.useEffect(() => {
+    const onScroll = () => {
+      const threshold = Math.min(window.innerHeight * 0.85, 760);
+      const progress = Math.min(window.scrollY / threshold, 1);
+      setScrollDepth(progress);
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const marketsCount = useCountUp(stats.activeMarkets);
   const volumeCount = useCountUp(Math.round(stats.totalEthVolume * 1000) / 1000, 1500);
   const usersCount = useCountUp(stats.totalUsers);
 
+  const handleHeroMove = (e: React.MouseEvent<HTMLElement>) => {
+    const el = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - el.left) / el.width - 0.5) * 16;
+    const y = ((e.clientY - el.top) / el.height - 0.5) * -16;
+    setTilt({ x, y });
+  };
+
+  const resetHeroMove = () => setTilt({ x: 0, y: 0 });
+
   return (
     <div className="space-y-20">
       {/* Hero Section */}
-      <section className="relative pt-12 pb-8">
-        <div className="max-w-4xl mx-auto text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
-            <LiveIndicator label="Live on Base" />
+      <section className="relative pt-10 pb-8 overflow-hidden" onMouseMove={handleHeroMove} onMouseLeave={resetHeroMove}>
+        <div className="hero-noise" aria-hidden />
+        <div className="hero-three-layer" aria-hidden>
+          <ThreeMarketBackground scrollDepth={scrollDepth} tiltX={tilt.x} tiltY={tilt.y} />
+        </div>
+        <MarketDataRibbon />
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 items-center">
+          <div className="text-center lg:text-left space-y-6 relative z-10">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
+              <LiveIndicator label="Live on Base" />
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
+              Decentralized{" "}
+              <span className="gradient-text">Financial Intelligence</span>
+              {" "}Platform
+            </h1>
+
+            <p className="text-lg sm:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+              Create permissionless prediction markets on any token. Stake positions with ETH.
+              Earn from accurate market forecasts. Fully on-chain, fully transparent.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-4 pt-4">
+              <Link href="/markets">
+                <button className="btn-primary flex items-center gap-2 text-base px-8 py-4">
+                  Create Market <LuArrowRight className="w-4 h-4" />
+                </button>
+              </Link>
+              <Link href="/markets/view">
+                <button className="btn-secondary flex items-center gap-2 text-base px-8 py-4">
+                  Explore Markets
+                </button>
+              </Link>
+            </div>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight">
-            Decentralized{" "}
-            <span className="gradient-text">Financial Intelligence</span>
-            {" "}Platform
-          </h1>
+          <div className="relative z-10 mx-auto w-full max-w-[520px] h-[360px] sm:h-[420px] lg:h-[460px] hero-3d-wrap">
+            <div
+              className="hero-3d-scene"
+              style={{
+                transform: `rotateX(${tilt.y + scrollDepth * 8}deg) rotateY(${tilt.x + scrollDepth * -6}deg) translateY(${scrollDepth * -10}px)`,
+              }}
+              aria-hidden
+            >
+              <div className="hero-3d-glow hero-3d-glow-a" />
+              <div className="hero-3d-glow hero-3d-glow-b" />
+              <div className="hero-orbital-ring hero-orbital-ring-1" />
+              <div className="hero-orbital-ring hero-orbital-ring-2" />
+              <div className="hero-core-sphere" />
 
-          <p className="text-lg sm:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed">
-            Create permissionless prediction markets on any token. Stake positions with ETH.
-            Earn from accurate market forecasts. Fully on-chain, fully transparent.
-          </p>
+              <div className="hero-float-card hero-float-card-a">
+                <span className="hero-float-label">24H Volume</span>
+                <strong>{volumeCount} ETH</strong>
+              </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Link href="/markets">
-              <button className="btn-primary flex items-center gap-2 text-base px-8 py-4">
-                Create Market <LuArrowRight className="w-4 h-4" />
-              </button>
-            </Link>
-            <Link href="/markets/view">
-              <button className="btn-secondary flex items-center gap-2 text-base px-8 py-4">
-                Explore Markets
-              </button>
-            </Link>
+              <div className="hero-float-card hero-float-card-b">
+                <span className="hero-float-label">Active Markets</span>
+                <strong>{marketsCount}</strong>
+              </div>
+
+              <div className="hero-float-card hero-float-card-c">
+                <span className="hero-float-label">Predictors</span>
+                <strong>{usersCount.toLocaleString()}</strong>
+              </div>
+            </div>
           </div>
         </div>
       </section>

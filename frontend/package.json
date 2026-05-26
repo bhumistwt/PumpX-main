@@ -44,6 +44,7 @@
     "siwe": "^3.0.0",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
+    "three": "^0.184.0",
     "viem": "^2.21.45",
     "wagmi": "^2.12.33",
     "zod": "^3.25.76"
