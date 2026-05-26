@@ -82,12 +82,12 @@ const Home: NextPage = () => {
         </div>
         <MarketDataRibbon />
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 items-center">
-          <div className="text-center lg:text-left space-y-6 relative z-10">
+          <div className="text-center lg:text-left space-y-6 relative z-10 redhat-caption">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
               <LiveIndicator label="Live on Base" />
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
+            <h1 className="goldman-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
               Decentralized{" "}
               <span className="gradient-text">Financial Intelligence</span>
               {" "}Platform
