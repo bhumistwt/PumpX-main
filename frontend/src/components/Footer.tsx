@@ -14,7 +14,7 @@ const Footer = ({ className }: { className?: string }) => (
             <span className="font-bold text-[var(--text-primary)]">PumpX</span>
           </div>
           <p className="text-sm text-[var(--text-muted)] max-w-xs">
-            Decentralized financial intelligence platform. Permissionless prediction markets powered by on-chain resolution.
+            Decentralized financial platform. Permissionless prediction markets powered by on-chain resolution.
           </p>
         </div>
 

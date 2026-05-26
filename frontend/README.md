@@ -1,4 +1,4 @@
-# PumpX — Decentralized Financial Intelligence Platform
+# PumpX — Decentralized Financial Platform
 
 > **Track:** Financial & Market Intelligence  
 > **Team:** BEDSHEET — Parul University  

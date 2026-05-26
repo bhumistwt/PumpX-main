@@ -88,9 +88,7 @@ const Home: NextPage = () => {
             </div>
 
             <h1 className="goldman-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
-              Decentralized{" "}
-              <span className="gradient-text">Financial Intelligence</span>
-              {" "}Platform
+              Decentralized Financial Platform
             </h1>
 
             <p className="text-lg sm:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto lg:mx-0 leading-relaxed">
