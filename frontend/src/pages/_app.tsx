@@ -27,6 +27,47 @@ function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const isAuthPage = AUTH_ROUTES.has(router.pathname);
 
+  // Suppress known WalletConnect sign-client race condition errors that can
+  // surface as unhandled promise rejections like:
+  // "Missing or invalid. Record was recently deleted - session: <id>"
+  // These originate inside @walletconnect/sign-client when a stale session
+  // record was removed concurrently; we swallow and log them to avoid
+  // crashing the React error overlay in development.
+  React.useEffect(() => {
+    const onUnhandledRejection = (ev: PromiseRejectionEvent) => {
+      try {
+        const reason = ev.reason;
+        const msg = typeof reason === 'string' ? reason : reason?.message || '';
+        if (msg && msg.includes('Record was recently deleted') && msg.includes('session:')) {
+          // Prevent the dev overlay / unhandled rejection from interrupting the app
+          console.warn('[PumpX] Suppressed WalletConnect stale-session error:', msg);
+          ev.preventDefault();
+        }
+      } catch (e) {
+        /* ignore */
+      }
+    };
+
+    const onWindowError = (ev: ErrorEvent) => {
+      try {
+        const msg = ev.error?.message || ev.message || '';
+        if (msg && msg.includes('Record was recently deleted') && msg.includes('session:')) {
+          console.warn('[PumpX] Suppressed WalletConnect stale-session error (window.error):', msg);
+          ev.preventDefault();
+        }
+      } catch (e) {
+        /* ignore */
+      }
+    };
+
+    window.addEventListener('unhandledrejection', onUnhandledRejection as any);
+    window.addEventListener('error', onWindowError as any);
+    return () => {
+      window.removeEventListener('unhandledrejection', onUnhandledRejection as any);
+      window.removeEventListener('error', onWindowError as any);
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={client}>
       <WagmiProvider config={config}>
