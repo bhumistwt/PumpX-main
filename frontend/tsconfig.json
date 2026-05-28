@@ -14,11 +14,12 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": ["next-env.d.ts", "**/*.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]
 }
