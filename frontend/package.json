@@ -17,6 +17,7 @@
     "@mui/x-date-pickers": "^7.22.2",
     "@prisma/client": "^6.19.2",
     "@rainbow-me/rainbowkit": "^2.2.0",
+    "@supabase/supabase-js": "^2.106.2",
     "@tanstack/react-query": "^5.60.2",
     "@types/ioredis": "^4.28.10",
     "axios": "^1.13.5",

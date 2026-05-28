@@ -121,8 +121,17 @@ npm run dev
 
 | Variable | Required | Description |
 |----------|----------|-------------|
+| `DATABASE_URL` | Yes | Supabase Postgres connection string for Prisma |
+| `DIRECT_DATABASE_URL` | Yes | Direct Supabase Postgres string for migrations |
+| `SESSION_SECRET` | Yes | Iron-session secret for wallet auth |
 | `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` | Yes | WalletConnect Cloud project ID |
 | `NEXT_PUBLIC_ALCHEMY_API_KEY` | Yes | Alchemy API key for Base RPC |
+| `NEXT_PUBLIC_SUPABASE_URL` | If using Supabase auth/storage | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | If using Supabase auth/storage | Supabase anonymous key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only | Supabase service role key for privileged backend actions |
+| `REDPILL_API_KEY` / `OPENAI_API_KEY` | Optional | AI endpoints |
+| `ALPHA_VANTAGE_API_KEY` / `TWELVE_DATA_API_KEY` | Optional | Stock data providers |
+| `ML_SERVICE_URL` | Optional | ML API base URL, defaults to `http://localhost:8001` |
 
 ---
 
