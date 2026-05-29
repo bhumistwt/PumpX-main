@@ -3,6 +3,359 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+model AuthNonce {
+  nonce     String   @id @db.VarChar(64)
+  address   String   @db.VarChar(42)
+  issuedAt  DateTime @default(now())
+  expiresAt DateTime
+  used      Boolean  @default(false)
+
+  @@index([address])
+  @@index([expiresAt])
+}
+
+model Battle {
+  id                                  String       @id
+  creatorAddress                      String       @db.VarChar(42)
+  challengerAddress                   String?      @db.VarChar(42)
+  marketAddress                       String       @db.VarChar(42)
+  creatorSide                         BetSide
+  stakeXP                             Int
+  status                              BattleStatus @default(PENDING)
+  winnnerAddress                      String?      @db.VarChar(42)
+  createdAt                           DateTime     @default(now())
+  expiresAt                           DateTime
+  settledAt                           DateTime?
+  User_Battle_challengerAddressToUser User?        @relation("Battle_challengerAddressToUser", fields: [challengerAddress], references: [address])
+  User_Battle_creatorAddressToUser    User         @relation("Battle_creatorAddressToUser", fields: [creatorAddress], references: [address])
+
+  @@index([challengerAddress])
+  @@index([creatorAddress])
+  @@index([marketAddress])
+  @@index([status])
+}
+
+model Bet {
+  id            String   @id
+  marketAddress String   @db.VarChar(42)
+  userAddress   String   @db.VarChar(42)
+  side          BetSide
+  amount        String
+  txHash        String   @db.VarChar(66)
+  blockNumber   Int
+  chainId       Int
+  createdAt     DateTime @default(now())
+  Market        Market   @relation(fields: [marketAddress], references: [contractAddress])
+  User          User     @relation(fields: [userAddress], references: [address])
+
+  @@index([chainId])
+  @@index([createdAt])
+  @@index([marketAddress])
+  @@index([userAddress])
+}
+
+model ChallengeProgress {
+  id          String   @id
+  userAddress String   @db.VarChar(42)
+  challengeId String   @db.VarChar(50)
+  date        String   @db.VarChar(10)
+  progress    Int      @default(0)
+  target      Int
+  completed   Boolean  @default(false)
+  xpAwarded   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@unique([userAddress, challengeId, date])
+  @@index([userAddress, date])
+}
+
+model Claim {
+  id            String   @id
+  marketAddress String   @db.VarChar(42)
+  userAddress   String   @db.VarChar(42)
+  payout        String
+  txHash        String   @db.VarChar(66)
+  blockNumber   Int
+  chainId       Int
+  createdAt     DateTime @default(now())
+
+  @@unique([marketAddress, userAddress])
+  @@index([userAddress])
+}
+
+model IndexerState {
+  chainId         Int      @id
+  lastBlockNumber Int      @default(0)
+  lastBlockHash   String   @default("") @db.VarChar(66)
+  updatedAt       DateTime
+}
+
+model Market {
+  id                       String    @id
+  contractAddress          String    @unique @db.VarChar(42)
+  chainId                  Int
+  creatorAddress           String    @db.VarChar(42)
+  tokenAddress             String    @db.VarChar(42)
+  question                 String    @db.VarChar(500)
+  threshold                String
+  deadline                 DateTime
+  initialSupply            String
+  latestSupply             String
+  yesPool                  String    @default("0")
+  noPool                   String    @default("0")
+  resolved                 Boolean   @default(false)
+  reached                  Boolean   @default(false)
+  disputed                 Boolean   @default(false)
+  paused                   Boolean   @default(false)
+  resolvedAt               DateTime?
+  txHash                   String    @db.VarChar(66)
+  blockNumber              Int
+  stockTicker              String?   @db.VarChar(10)
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime
+  blendedProbability       Float?
+  modelBaselineProbability Float?
+  modelConfidence          Float?
+  modelRiskFlags           String[]
+  modelSignal              String?   @db.VarChar(10)
+  Bet                      Bet[]
+  User                     User      @relation(fields: [creatorAddress], references: [address])
+
+  @@index([chainId])
+  @@index([createdAt])
+  @@index([creatorAddress])
+  @@index([deadline])
+  @@index([resolved])
+  @@index([stockTicker])
+}
+
+model ModelDriftLog {
+  id          String   @id
+  psiScore    Float?
+  status      String?  @db.VarChar(100)
+  isDegrading Boolean  @default(false)
+  checkedAt   DateTime @default(now())
+
+  @@index([checkedAt])
+}
+
+model ModelHealth {
+  id                 String    @id @default("main")
+  avgProbability     Float     @default(0.5)
+  avgConfidence      Float     @default(0)
+  overconfidenceRate Float     @default(0)
+  totalPredictions   Int       @default(0)
+  lastDriftCheck     DateTime?
+  lastDriftPsi       Float?
+  isDegrading        Boolean   @default(false)
+  updatedAt          DateTime
+}
+
+model ModelPredictionLog {
+  id            String            @id
+  marketAddress String            @db.VarChar(42)
+  probability   Float
+  confidence    Float
+  signal        String            @db.VarChar(10)
+  riskFlags     String[]
+  triggeredBy   PredictionTrigger
+  rawScore      Float?
+  createdAt     DateTime          @default(now())
+
+  @@index([createdAt])
+  @@index([marketAddress])
+  @@index([triggeredBy])
+}
+
+model Reputation {
+  userAddress     String @id @db.VarChar(42)
+  score           Int    @default(0)
+  marketsCreated  Int    @default(0)
+  marketsResolved Int    @default(0)
+  totalBets       Int    @default(0)
+  totalWins       Int    @default(0)
+  totalVolume     String @default("0")
+  upvotes         Int    @default(0)
+  flags           Int    @default(0)
+  User            User   @relation(fields: [userAddress], references: [address])
+}
+
+model ReputationEvent {
+  id                                     String         @id
+  fromAddress                            String         @db.VarChar(42)
+  toAddress                              String         @db.VarChar(42)
+  type                                   ReputationType
+  reason                                 String?        @db.VarChar(200)
+  createdAt                              DateTime       @default(now())
+  User_ReputationEvent_fromAddressToUser User           @relation("ReputationEvent_fromAddressToUser", fields: [fromAddress], references: [address])
+  User_ReputationEvent_toAddressToUser   User           @relation("ReputationEvent_toAddressToUser", fields: [toAddress], references: [address])
+
+  @@index([fromAddress])
+  @@index([toAddress])
+}
+
+model Season {
+  id            String          @id
+  name          String          @db.VarChar(100)
+  number        Int             @unique
+  startDate     DateTime
+  endDate       DateTime
+  active        Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  SeasonEntry   SeasonEntry[]
+  XPTransaction XPTransaction[]
+
+  @@index([active])
+}
+
+model SeasonEntry {
+  id          String @id
+  seasonId    String
+  userAddress String @db.VarChar(42)
+  xp          Int    @default(0)
+  rank        Int?
+  Season      Season @relation(fields: [seasonId], references: [id])
+  User        User   @relation(fields: [userAddress], references: [address])
+
+  @@unique([seasonId, userAddress])
+  @@index([seasonId, xp(sort: Desc)])
+}
+
+model Squad {
+  id          String        @id
+  name        String        @unique @db.VarChar(50)
+  tag         String        @unique @db.VarChar(5)
+  inviteCode  String        @unique @db.VarChar(12)
+  level       Int           @default(1)
+  totalXP     Int           @default(0)
+  maxMembers  Int           @default(10)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime
+  SquadMember SquadMember[]
+
+  @@index([totalXP(sort: Desc)])
+}
+
+model SquadMember {
+  id            String    @id
+  squadId       String
+  userAddress   String    @unique @db.VarChar(42)
+  role          SquadRole @default(MEMBER)
+  xpContributed Int       @default(0)
+  joinedAt      DateTime  @default(now())
+  Squad         Squad     @relation(fields: [squadId], references: [id], onDelete: Cascade)
+  User          User      @relation(fields: [userAddress], references: [address])
+
+  @@index([squadId])
+}
+
+model Streak {
+  userAddress      String   @id @db.VarChar(42)
+  currentStreak    Int      @default(0)
+  longestStreak    Int      @default(0)
+  lastActivityDate String   @db.VarChar(10)
+  shieldsRemaining Int      @default(0)
+  updatedAt        DateTime
+  User             User     @relation(fields: [userAddress], references: [address])
+}
+
+model User {
+  address                                           String            @id @db.VarChar(42)
+  role                                              Role              @default(USER)
+  createdAt                                         DateTime          @default(now())
+  updatedAt                                         DateTime
+  Battle_Battle_challengerAddressToUser             Battle[]          @relation("Battle_challengerAddressToUser")
+  Battle_Battle_creatorAddressToUser                Battle[]          @relation("Battle_creatorAddressToUser")
+  Bet                                               Bet[]
+  Market                                            Market[]
+  Reputation                                        Reputation?
+  ReputationEvent_ReputationEvent_fromAddressToUser ReputationEvent[] @relation("ReputationEvent_fromAddressToUser")
+  ReputationEvent_ReputationEvent_toAddressToUser   ReputationEvent[] @relation("ReputationEvent_toAddressToUser")
+  SeasonEntry                                       SeasonEntry[]
+  SquadMember                                       SquadMember?
+  Streak                                            Streak?
+  UserBadge                                         UserBadge[]
+  UserProfile                                       UserProfile?
+  XPTransaction                                     XPTransaction[]
+
+  @@index([createdAt])
+}
+
+model UserBadge {
+  id          String   @id
+  userAddress String   @db.VarChar(42)
+  badgeId     String   @db.VarChar(50)
+  unlockedAt  DateTime @default(now())
+  User        User     @relation(fields: [userAddress], references: [address])
+
+  @@unique([userAddress, badgeId])
+  @@index([userAddress])
+}
+
+model UserProfile {
+  address   String   @id @db.VarChar(42)
+  username  String   @unique @db.VarChar(30)
+  avatarUrl String?  @db.VarChar(500)
+  bio       String?  @db.VarChar(200)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  User      User     @relation(fields: [address], references: [address])
+}
+
+model XPTransaction {
+  id          String   @id
+  userAddress String   @db.VarChar(42)
+  amount      Int
+  reason      String   @db.VarChar(100)
+  metadata    Json?
+  seasonId    String?
+  createdAt   DateTime @default(now())
+  Season      Season?  @relation(fields: [seasonId], references: [id])
+  User        User     @relation(fields: [userAddress], references: [address])
+
+  @@index([createdAt])
+  @@index([seasonId])
+  @@index([userAddress])
+}
+
+enum BattleStatus {
+  PENDING
+  ACTIVE
+  SETTLED
+  CANCELLED
+  EXPIRED
+}
+
+enum BetSide {
+  YES
+  NO
+}
+
+enum PredictionTrigger {
+  CREATION
+  LIVE_UPDATE
+  SETTLEMENT
+  MANUAL
+}
+
+enum ReputationType {
+  UPVOTE
+  FLAG
+}
+
+enum Role {
+  USER
+  ORACLE
+  ADMIN
+}
+
+enum SquadRole {
+  LEADER
+  OFFICER
+  MEMBER
 }

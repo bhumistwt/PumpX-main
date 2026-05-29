@@ -47,7 +47,7 @@ const Footer = ({ className }: { className?: string }) => (
 
       <div className="mt-8 pt-6 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row justify-between items-center gap-4">
         <p className="text-xs text-[var(--text-muted)]">
-          &copy; {new Date().getFullYear()} PumpX. Built at Consensus 2026.
+          &copy; {new Date().getFullYear()} PumpX.
         </p>
         <div className="flex items-center gap-4">
           <span className="text-xs text-[var(--text-muted)]">v1.0.0</span>

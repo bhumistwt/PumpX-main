@@ -3,7 +3,6 @@
 > **Track:** Financial & Market Intelligence  
 > **Team:** BEDSHEET — Parul University  
 > **Members:** Bhumi Mishra · Prem Diwan · Ashwin Pandey  
-> **Event:** Consensus 2026
 
 ---
 
