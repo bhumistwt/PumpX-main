@@ -30,11 +30,15 @@ const PROTECTED_PREFIXES = [
     '/admin',
 ];
 
-const PUBLIC_PATHS = new Set(['/', '/login', '/register']);
+const PUBLIC_PATHS = new Set(['/', '/login', '/register', '/markets/explore']);
 
 function isProtected(pathname: string): boolean {
     if (pathname.startsWith('/api/')) return false; // API routes handle their own auth
     if (PUBLIC_PATHS.has(pathname)) return false;
+    // Allow single-segment market detail routes like /markets/<id> and the explore page
+    const parts = pathname.split('/').filter(Boolean);
+    if (parts[0] === 'markets' && parts.length === 2) return false;
+
     return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'));
 }
 

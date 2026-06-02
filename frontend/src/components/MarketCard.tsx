@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Market, MarketStatus } from '../types/market';
 import { useMarket } from '../hooks/useMarket';
 import { useAccount, useWriteContract, useReadContract, useWaitForTransactionReceipt, useBalance } from 'wagmi';
@@ -19,6 +19,7 @@ export default function MarketCard({ market, onUpdate }: MarketCardProps) {
   const [timeRemaining, setTimeRemaining] = useState('');
   const [progress, setProgress] = useState(0);
   const [betAmount, setBetAmount] = useState('');
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const [txStatus, setTxStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
 
   const { data: hash, writeContract, isPending, error: writeError } = useWriteContract();
@@ -49,6 +50,29 @@ export default function MarketCard({ market, onUpdate }: MarketCardProps) {
       setTimeout(() => setTxStatus('idle'), 3000);
     }
   }, [isSuccess, onUpdate]);
+
+  // Auto-focus bet input after user connects if a focus flag was set
+  const prevAddressRef = useRef<string | undefined>(address);
+  useEffect(() => {
+    const prev = prevAddressRef.current;
+    if (!prev && address) {
+      try {
+        const raw = sessionStorage.getItem('pumpx.focusBet');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const targetId = parsed?.marketId;
+          const thisId = market.marketContract || market.id;
+          if (!targetId || targetId === thisId) {
+            setTimeout(() => {
+              inputRef.current?.focus();
+            }, 120);
+          }
+          sessionStorage.removeItem('pumpx.focusBet');
+        }
+      } catch {}
+    }
+    prevAddressRef.current = address;
+  }, [address, market.id, market.marketContract]);
 
   const { data: ethBalance } = useBalance({ address });
 
@@ -281,6 +305,7 @@ export default function MarketCard({ market, onUpdate }: MarketCardProps) {
               type="number"
               step="0.001"
               min="0"
+              ref={inputRef}
               value={betAmount}
               onChange={(e) => setBetAmount(e.target.value)}
               placeholder="0.00"

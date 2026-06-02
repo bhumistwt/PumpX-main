@@ -63,6 +63,10 @@ const Home: NextPage = () => {
   const volumeCount = useCountUp(Math.round(stats.totalEthVolume * 1000) / 1000, 1500);
   const usersCount = useCountUp(stats.totalUsers);
 
+  const showMarkets = stats.activeMarkets === 0 ? '--' : marketsCount;
+  const showVolume = stats.totalEthVolume === 0 ? '--' : `${volumeCount} ETH`;
+  const showUsers = stats.totalUsers === 0 ? '--' : usersCount.toLocaleString();
+
   const handleHeroMove = (e: React.MouseEvent<HTMLElement>) => {
     const el = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - el.left) / el.width - 0.5) * 16;
@@ -147,15 +151,15 @@ const Home: NextPage = () => {
       <section>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div className="card p-6 text-center">
-            <p className="text-3xl font-bold font-mono-data text-[var(--accent-primary)]">{marketsCount}</p>
+            <p className="text-3xl font-bold font-mono-data text-[var(--accent-primary)]">{showMarkets}</p>
             <p className="text-sm text-[var(--text-muted)] mt-1">Active Markets</p>
           </div>
           <div className="card p-6 text-center">
-            <p className="text-3xl font-bold font-mono-data text-[var(--accent-primary)]">{volumeCount} ETH</p>
+            <p className="text-3xl font-bold font-mono-data text-[var(--accent-primary)]">{showVolume}</p>
             <p className="text-sm text-[var(--text-muted)] mt-1">Total Volume</p>
           </div>
           <div className="card p-6 text-center">
-            <p className="text-3xl font-bold font-mono-data text-[var(--accent-primary)]">{usersCount.toLocaleString()}</p>
+            <p className="text-3xl font-bold font-mono-data text-[var(--accent-primary)]">{showUsers}</p>
             <p className="text-sm text-[var(--text-muted)] mt-1">Unique Predictors</p>
           </div>
         </div>
