@@ -6,7 +6,7 @@ import {
   LuAlignJustify, LuX, LuTrendingUp, LuPlusCircle, LuLayoutDashboard,
   LuTrophy, LuBot, LuGamepad2, LuFlame, LuShield, LuGitBranch, LuGlobe,
   LuGauge, LuGlobe2, LuBarChart2, LuChevronDown, LuLogIn, LuLogOut, LuUser,
-  LuMoon, LuSun,
+  LuMoon, LuSun, LuWallet,
 } from 'react-icons/lu';
 import { XPBar } from './gamification/XPBar';
 import { StreakCounter } from './gamification/StreakCounter';
@@ -43,6 +43,7 @@ const NAV_GROUPS = [
     href: null,
     items: [
       { href: '/dashboard', label: 'My Dashboard', icon: LuLayoutDashboard },
+      { href: '/portfolio', label: 'Portfolio', icon: LuWallet },
       { href: '/leaderboard', label: 'Leaderboard', icon: LuTrophy },
       { href: '/gamification', label: 'Achievements', icon: LuGamepad2 },
       { href: '/analytics', label: 'Analytics', icon: LuBarChart2 },

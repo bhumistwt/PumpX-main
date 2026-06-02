@@ -5,6 +5,7 @@ import { LiveIndicator } from "../components/ui/primitives";
 import { LuArrowRight, LuShield, LuZap, LuGlobe, LuBarChart3, LuTrendingUp, LuLock } from "react-icons/lu";
 import ThreeMarketBackground from "../components/hero/ThreeMarketBackground";
 import MarketDataRibbon from "../components/hero/MarketDataRibbon";
+import SecuritySection from "../components/home/SecuritySection";
 
 // Animated counter hook
 function useCountUp(target: number, duration = 2000) {
@@ -183,6 +184,8 @@ const Home: NextPage = () => {
           ))}
         </div>
       </section>
+
+      <SecuritySection />
 
       {/* How It Works */}
       <section className="pb-8">
