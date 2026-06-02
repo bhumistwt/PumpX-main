@@ -17,7 +17,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
 
     // Fetch all bets by this user, joined with market data
     // Also fetch claims to determine claimed status
-    const [bets, claims] = await Promise.all([
+    const [bets, claims, referrals] = await Promise.all([
         prisma.bet.findMany({
             where: { userAddress: address },
             include: {
@@ -42,6 +42,10 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
         prisma.claim.findMany({
             where: { userAddress: address },
             select: { marketAddress: true },
+        }),
+        prisma.referral.findMany({
+            where: { referrerId: address },
+            select: { volumeGenerated: true, refereeId: true },
         }),
     ]);
 
@@ -98,6 +102,12 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
 
     const pnlWei = totalReturn - totalInvestment;
 
+    const referralVolumeWei = referrals.reduce(
+        (sum, r) => sum + BigInt(r.volumeGenerated || '0'),
+        0n,
+    );
+    const uniqueReferees = new Set(referrals.map((r) => r.refereeId)).size;
+
     return res.status(200).json({
         address,
         totalBets: bets.length,
@@ -107,6 +117,11 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
         pnlPercent: totalInvestment > 0n
             ? ((Number(pnlWei) / Number(totalInvestment)) * 100).toFixed(2)
             : '0.00',
+        referralStats: {
+            totalReferrals: referrals.length,
+            uniqueReferees,
+            totalVolumeEth: (Number(referralVolumeWei) / 1e18).toFixed(6),
+        },
         positions,
     });
 }

@@ -3,8 +3,11 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabase';
 import MarketCard from '../../components/MarketCard';
+import MarketComments from '../../components/markets/MarketComments';
+import ReferralLinkButton from '../../components/markets/ReferralLinkButton';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
+import { isValidEthAddress } from '../../lib/addresses';
 
 function truncate(addr?: string) {
   if (!addr) return '';
@@ -43,6 +46,35 @@ export default function MarketDetailPage() {
   const [loading, setLoading] = useState(true);
   const { address } = useAccount();
   const cardRef = useRef<HTMLDivElement | null>(null);
+
+  // Complete referral attribution when wallet connects after /m/...?ref= visit
+  useEffect(() => {
+    if (!address || !market?.contractAddress) return;
+    const key = `pumpx.ref.${market.contractAddress.toLowerCase()}`;
+    let referrer: string | null = null;
+    try {
+      referrer = sessionStorage.getItem(key);
+    } catch {
+      return;
+    }
+    if (!referrer || !isValidEthAddress(referrer)) return;
+
+    fetch('/api/referrals/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        marketId: market.contractAddress,
+        referrerId: referrer,
+        refereeId: address,
+      }),
+    }).finally(() => {
+      try {
+        sessionStorage.removeItem(key);
+      } catch {
+        /* ignore */
+      }
+    });
+  }, [address, market?.contractAddress]);
 
   useEffect(() => {
     let mounted = true;
@@ -179,6 +211,10 @@ export default function MarketDetailPage() {
               <div className="text-xs text-[var(--text-muted)]">Contract</div>
               <div className="font-mono text-sm text-white">{truncate(market.contractAddress)}</div>
             </div>
+            <div className="p-4 bg-[var(--bg-elevated)] rounded-lg">
+              <div className="text-xs text-[var(--text-muted)] mb-2">Refer friends</div>
+              <ReferralLinkButton marketId={market.contractAddress} />
+            </div>
           </div>
         </div>
 
@@ -186,6 +222,8 @@ export default function MarketDetailPage() {
           <MarketCard market={mapped} />
         </div>
       </div>
+
+      <MarketComments marketId={market.contractAddress} />
     </div>
   );
 }

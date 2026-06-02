@@ -35,6 +35,10 @@ model User {
   battlesCreated    Battle[]         @relation("BattleCreator")
   battlesChallenged Battle[]         @relation("BattleChallenger")
   seasonEntries     SeasonEntry[]
+  comments          Comment[]
+  referralsMade     Referral[] @relation("Referrer")
+  referralsReceived Referral[] @relation("Referee")
+  pumpScore           PumpScore?
 
   @@index([createdAt])
 }
@@ -81,8 +85,11 @@ model Market {
   updatedAt       DateTime     @updatedAt
 
   // Relations
-  creator User  @relation("MarketCreator", fields: [creatorAddress], references: [address])
-  bets    Bet[]
+  creator   User       @relation("MarketCreator", fields: [creatorAddress], references: [address])
+  bets      Bet[]
+  comments          Comment[]
+  referrals         Referral[]
+  aiMarketAnalysis  AiMarketAnalysis?
 
   @@index([creatorAddress])
   @@index([chainId])
@@ -341,6 +348,81 @@ model ChallengeProgress {
   @@index([userAddress, date])
 }
 
+// ── Market comments ──────────────────────────────────────────
+
+model Comment {
+  id            String   @id @default(cuid())
+  marketId      String   @db.VarChar(42)
+  walletAddress String   @db.VarChar(42)
+  content       String   @db.VarChar(1000)
+  createdAt     DateTime @default(now())
+
+  market Market @relation(fields: [marketId], references: [contractAddress], onDelete: Cascade)
+  user   User   @relation(fields: [walletAddress], references: [address])
+
+  @@index([marketId, createdAt(sort: Desc)])
+  @@index([walletAddress])
+}
+
+// ── Referrals ────────────────────────────────────────────────
+
+model Referral {
+  id              String   @id @default(cuid())
+  referrerId      String   @db.VarChar(42)
+  refereeId       String   @db.VarChar(42)
+  marketId        String   @db.VarChar(42)
+  volumeGenerated String   @default("0")
+  createdAt       DateTime @default(now())
+
+  market   Market @relation(fields: [marketId], references: [contractAddress], onDelete: Cascade)
+  referrer User   @relation("Referrer", fields: [referrerId], references: [address])
+  referee  User   @relation("Referee", fields: [refereeId], references: [address])
+
+  @@unique([referrerId, refereeId, marketId])
+  @@index([referrerId])
+  @@index([refereeId])
+  @@index([marketId])
+}
+
+// ── AI Intelligence (Phase 1) ────────────────────────────────
+
+model NarrativeTrend {
+  id             String   @id @default(cuid())
+  name           String   @unique @db.VarChar(50)
+  mentionGrowth  Float
+  sentiment      Float
+  trendDirection String   @db.VarChar(10)
+  updatedAt      DateTime @updatedAt
+}
+
+model WhaleAlert {
+  id            String   @id @default(cuid())
+  walletAddress String   @db.VarChar(42)
+  action        String   @db.VarChar(20)
+  tokenAddress  String   @db.VarChar(42)
+  amount        String
+  txHash        String   @unique @db.VarChar(66)
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([walletAddress])
+}
+
+model AiMarketAnalysis {
+  id              String   @id @default(cuid())
+  marketId        String   @unique @db.VarChar(42)
+  bullCase        Json
+  bearCase        Json
+  confidenceScore Int
+  riskLevel       String   @db.VarChar(10)
+  generatedAt     DateTime @default(now())
+  cachedUntil     DateTime
+
+  market Market @relation(fields: [marketId], references: [contractAddress], onDelete: Cascade)
+
+  @@index([cachedUntil])
+}
+
 // ── SIWE Auth Nonces (prevents replay attacks) ───────────────
 
 model AuthNonce {
@@ -357,14 +439,37 @@ model AuthNonce {
 // ── User Profiles (set on first login) ───────────────────────
 
 model UserProfile {
-  address   String   @id @db.VarChar(42)
-  username  String   @unique @db.VarChar(30)
-  avatarUrl String?  @db.VarChar(500)
-  bio       String?  @db.VarChar(200)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  address              String    @id @db.VarChar(42)
+  username             String    @unique @db.VarChar(30)
+  avatarUrl            String?   @db.VarChar(500)
+  bio                  String?   @db.VarChar(200)
+  aiInsights           Json?
+  aiInsightsCachedAt   DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   user User @relation(fields: [address], references: [address])
+}
+
+// ── PumpScore leaderboard (per-wallet composite score) ───────
+
+model PumpScore {
+  userAddress   String   @id @db.VarChar(42)
+  accuracy      Float
+  roi           Float
+  participation Float
+  consistency   Float
+  winRate       Float
+  pumpScore     Float
+  totalMarkets  Int      @default(0)
+  totalBets     Int      @default(0)
+  roiPercent    Float    @default(0)
+  calculatedAt  DateTime @default(now())
+
+  user User @relation(fields: [userAddress], references: [address])
+
+  @@index([pumpScore(sort: Desc)])
+  @@index([calculatedAt])
 }
 
 // ── ML Model Prediction Log ──────────────────────────────

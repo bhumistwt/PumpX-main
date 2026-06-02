@@ -47,6 +47,9 @@ import {
   LuX,
 } from 'react-icons/lu';
 import PumpScoreLeaderboard from '../components/PumpScoreLeaderboard';
+import TrendingNarratives from '../components/intelligence/TrendingNarratives';
+import WhaleActivityFeed, { type WhaleAlertItem } from '../components/intelligence/WhaleActivityFeed';
+import type { NarrativeCard } from '../lib/ai/narrativeEngine';
 
 // ── Default watchlist (demo tickers) ───────────────────
 const DEFAULT_WATCHLIST = ['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'BTC-USD'];
@@ -97,6 +100,36 @@ export default function IntelligencePage() {
   const [sectorFilter, setSectorFilter] = useState('All');
   const [markets, setMarkets] = useState<Market[]>([]);
   const [historyDays, setHistoryDays] = useState(30);
+  const [narratives, setNarratives] = useState<NarrativeCard[]>([]);
+  const [whaleAlerts, setWhaleAlerts] = useState<WhaleAlertItem[]>([]);
+  const [intelLoading, setIntelLoading] = useState(true);
+  const [intelError, setIntelError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadIntel() {
+      setIntelLoading(true);
+      setIntelError(null);
+      try {
+        const res = await fetch('/api/intelligence');
+        if (!res.ok) throw new Error('Failed to load intelligence feed');
+        const data = await res.json();
+        if (!mounted) return;
+        setNarratives(data.narratives ?? []);
+        setWhaleAlerts(data.whaleAlerts ?? []);
+      } catch (e) {
+        if (mounted) {
+          setIntelError(e instanceof Error ? e.message : 'Failed to load');
+          setNarratives([]);
+          setWhaleAlerts([]);
+        }
+      } finally {
+        if (mounted) setIntelLoading(false);
+      }
+    }
+    loadIntel();
+    return () => { mounted = false; };
+  }, []);
 
   // Load markets from localStorage
   useEffect(() => {
@@ -141,23 +174,15 @@ export default function IntelligencePage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 animate-fade-in">
-      {/* PumpScore Leaderboard */}
-      <div className="card p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-white">PumpScore Leaderboard</h2>
-          <p className="text-sm text-[var(--text-muted)]">Top tokens ranked by ML score</p>
-        </div>
-        <PumpScoreLeaderboard />
-      </div>
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-bold text-white">Stock Intelligence</h1>
+            <h1 className="text-2xl font-bold text-white">Market Intelligence</h1>
             <LiveIndicator />
           </div>
           <p className="text-sm text-[var(--text-muted)]">
-            Real-time market data powering prediction intelligence
+            Narratives, whale flow, and ML-powered market signals
           </p>
         </div>
 
@@ -196,6 +221,46 @@ export default function IntelligencePage() {
             </div>
           )}
         </div>
+      </div>
+
+      {intelError && (
+        <div className="card p-4 mb-6 border border-red-500/30 bg-red-500/10 text-sm text-red-400">
+          {intelError}
+        </div>
+      )}
+
+      {/* Section 1: Trending Narratives */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-white">Trending Narratives</h2>
+          <p className="text-xs text-[var(--text-muted)]">Sector momentum from live markets</p>
+        </div>
+        <TrendingNarratives narratives={narratives} loading={intelLoading} />
+      </section>
+
+      {/* Section 2: Whale Activity */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-white">Whale Activity</h2>
+          <p className="text-xs text-[var(--text-muted)]">Large positions (&gt;0.1 ETH)</p>
+        </div>
+        <WhaleActivityFeed alerts={whaleAlerts} loading={intelLoading} limit={10} />
+      </section>
+
+      {/* Section 3: PumpScore Leaderboard */}
+      <div className="card p-6 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-white">PumpScore Leaderboard</h2>
+          <p className="text-sm text-[var(--text-muted)]">Top tokens ranked by ML score</p>
+        </div>
+        <PumpScoreLeaderboard />
+      </div>
+
+      <div className="border-t border-[var(--border-subtle)] pt-8 mb-6">
+        <h2 className="text-lg font-bold text-white mb-1">Stock Intelligence</h2>
+        <p className="text-sm text-[var(--text-muted)] mb-6">
+          Real-time market data powering prediction intelligence
+        </p>
       </div>
 
       {/* Sector Filters */}

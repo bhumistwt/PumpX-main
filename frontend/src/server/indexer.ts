@@ -372,6 +372,9 @@ export class EventIndexer {
           chainId: this.chainId,
         },
       });
+
+      const { attributeReferralVolume } = await import('./referrals');
+      await attributeReferralVolume(marketAddress, userAddress, amount.toString()).catch(() => {});
     }
 
     // Update market pool totals

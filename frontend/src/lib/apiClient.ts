@@ -118,8 +118,10 @@ export interface LeaderboardEntry {
 }
 
 export const leaderboardApi = {
-  get: (type: 'volume' | 'winRate' | 'bets' | 'xp' = 'volume', limit = 50) =>
-    apiFetch<{ type: string; entries: LeaderboardEntry[] }>(`/api/leaderboard?type=${type}&limit=${limit}`),
+  get: (type: 'pumpScore' | 'volume' | 'winRate' | 'bets' | 'xp' = 'pumpScore', limit = 50) =>
+    apiFetch<{ type: string; entries: LeaderboardEntry[]; calculatedAt?: string }>(
+      `/api/leaderboard?type=${type}&limit=${limit}`,
+    ),
 };
 
 // ── Gamification ─────────────────────────────────────

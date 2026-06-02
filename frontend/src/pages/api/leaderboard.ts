@@ -6,17 +6,17 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '../../server/db';
 import { withErrorHandler, withMethod, compose } from '../../server/middleware';
-import { createLogger } from '../../server/logger';
+import { getPumpScoreLeaderboard } from '../../server/pumpScore';
 
-const log = createLogger('api:leaderboard');
-
-type LeaderboardType = 'volume' | 'winRate' | 'bets' | 'xp';
+type LeaderboardType = 'pumpScore' | 'volume' | 'winRate' | 'bets' | 'xp';
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const type = (req.query.type as LeaderboardType) || 'volume';
+  const type = (req.query.type as LeaderboardType) || 'pumpScore';
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
 
   switch (type) {
+    case 'pumpScore':
+      return pumpScoreLeaderboard(res, limit);
     case 'volume':
       return volumeLeaderboard(res, limit);
     case 'winRate':
@@ -26,8 +26,23 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     case 'xp':
       return xpLeaderboard(res, limit);
     default:
-      return res.status(400).json({ error: 'Invalid leaderboard type. Use: volume, winRate, bets, xp' });
+      return res.status(400).json({
+        error: 'Invalid leaderboard type. Use: pumpScore, volume, winRate, bets, xp',
+      });
   }
+}
+
+/** PumpScore composite leaderboard — cached 1h, HTTP cache 1h */
+async function pumpScoreLeaderboard(res: NextApiResponse, limit: number) {
+  res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=7200');
+
+  const { entries, calculatedAt } = await getPumpScoreLeaderboard(limit);
+
+  return res.status(200).json({
+    type: 'pumpScore',
+    entries,
+    calculatedAt,
+  });
 }
 
 /** Leaderboard by total bet volume */

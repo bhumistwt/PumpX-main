@@ -8,6 +8,8 @@ import {
   LuExternalLink,
   LuRefreshCw,
   LuTrophy,
+  LuUsers,
+  LuLink,
 } from 'react-icons/lu';
 import { useAuth } from '../hooks/useAuth';
 import { PageHeader, Badge, EmptyState } from '../components/ui/primitives';
@@ -44,6 +46,11 @@ interface PortfolioResponse {
   totalReturnEth: string;
   pnlEth: string;
   pnlPercent: string;
+  referralStats?: {
+    totalReferrals: number;
+    uniqueReferees: number;
+    totalVolumeEth: string;
+  };
   positions: PortfolioPosition[];
 }
 
@@ -348,6 +355,36 @@ export default function PortfolioPage() {
 
       {!needsSignIn && user?.isLoggedIn && (
         <>
+          {/* Referral stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="card p-4 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-[var(--accent-primary)]/10 flex items-center justify-center">
+                <LuUsers className="w-5 h-5 text-[var(--accent-primary)]" />
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-muted)]">Total referrals</p>
+                <p className="text-xl font-bold font-mono-data">
+                  {loading ? '--' : (data?.referralStats?.totalReferrals ?? '--')}
+                </p>
+              </div>
+            </div>
+            <div className="card p-4 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-[var(--accent-secondary)]/10 flex items-center justify-center">
+                <LuLink className="w-5 h-5 text-[var(--accent-secondary)]" />
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-muted)]">Volume from your links</p>
+                <p className="text-xl font-bold font-mono-data">
+                  {loading
+                    ? '--'
+                    : data?.referralStats?.totalVolumeEth != null
+                      ? `${data.referralStats.totalVolumeEth} ETH`
+                      : '--'}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Summary */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {loading ? (
