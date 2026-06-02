@@ -18,14 +18,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // total distinct creators (predictors)
     let totalPredictors = 0;
-    try {
-      const preds = await sb.from('Market').select('creatorAddress').distinct('creatorAddress');
-      totalPredictors = Array.isArray(preds.data) ? preds.data.length : 0;
-    } catch (e) {
-      const list = await sb.from('Market').select('creatorAddress');
-      const unique = new Set((list.data || []).map((r: any) => r.creatorAddress));
-      totalPredictors = unique.size;
-    }
+    const list = await sb.from('Market').select('creatorAddress');
+    const unique = new Set((list.data || []).map((r: any) => r.creatorAddress));
+    totalPredictors = unique.size;
 
     // total volume: sum yesPool + noPool (strings of wei). We'll fetch pools and aggregate in JS to avoid SQL type issues.
     const volResp = await sb.from('Market').select('yesPool,noPool');
