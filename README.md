@@ -170,10 +170,7 @@ Coming Soon
 
 
 
-Contributors
-
-
-
+Contributor
 
 @bhumistwt
 Bhumi Mishra — Creator & Lead Developer
@@ -182,8 +179,3 @@ Bhumi Mishra — Creator & Lead Developer
 
 License
 MIT License. See LICENSE for details.
-
-
-
-© 2026 PumpX · Built at Consensus 2026 · v1.0.0
-
