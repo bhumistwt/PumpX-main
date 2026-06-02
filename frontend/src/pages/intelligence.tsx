@@ -46,6 +46,7 @@ import {
   LuArrowRight,
   LuX,
 } from 'react-icons/lu';
+import PumpScoreLeaderboard from '../components/PumpScoreLeaderboard';
 
 // ── Default watchlist (demo tickers) ───────────────────
 const DEFAULT_WATCHLIST = ['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'BTC-USD'];
@@ -140,6 +141,14 @@ export default function IntelligencePage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 animate-fade-in">
+      {/* PumpScore Leaderboard */}
+      <div className="card p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-white">PumpScore Leaderboard</h2>
+          <p className="text-sm text-[var(--text-muted)]">Top tokens ranked by ML score</p>
+        </div>
+        <PumpScoreLeaderboard />
+      </div>
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>

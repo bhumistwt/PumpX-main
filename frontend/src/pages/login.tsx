@@ -9,6 +9,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../hooks/useAuth';
 import { hasWalletConnectProjectId } from '../wagmi';
 import { LuShield, LuZap, LuLock, LuTrendingUp } from 'react-icons/lu';
+import ActiveBettors from '../components/ActiveBettors';
 
 const FEATURES = [
     { icon: LuTrendingUp, text: 'Predict stock & crypto milestones' },
@@ -99,17 +100,15 @@ export default function LoginPage() {
                     </div>
 
                     <div className="flex items-center gap-4 pt-4 border-t" style={{ borderColor: 'var(--glass-border)' }}>
-                        <div className="flex -space-x-2">
-                            {['👤', '👤', '👤', '👤'].map((_, i) => (
-                                <div key={i} className="w-8 h-8 rounded-full text-xs flex items-center justify-center"
-                                    style={{ background: `hsl(${i * 60 + 180}, 40%, 20%)`, border: '2px solid var(--bg-base)', color: 'var(--text-muted)' }}>
-                                    {String.fromCharCode(65 + i)}
-                                </div>
-                            ))}
-                        </div>
-                        <p className="text-sm text-[var(--text-muted)]">
-                            <span className="text-[var(--accent-primary)] font-semibold">2,400+</span> bettors active
-                        </p>
+                            <div className="flex -space-x-2">
+                                {['👤', '👤', '👤', '👤'].map((_, i) => (
+                                    <div key={i} className="w-8 h-8 rounded-full text-xs flex items-center justify-center"
+                                        style={{ background: `hsl(${i * 60 + 180}, 40%, 20%)`, border: '2px solid var(--bg-base)', color: 'var(--text-muted)' }}>
+                                        {String.fromCharCode(65 + i)}
+                                    </div>
+                                ))}
+                            </div>
+                            <ActiveBettors />
                     </div>
                 </div>
 
